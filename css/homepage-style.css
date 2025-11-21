@@ -1,0 +1,78 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Microsoft JhengHei', 'PingFang TC', 'Helvetica Neue', Arial, sans-serif;
+    background-color: #B58863;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh
+}
+
+.homepage {
+    background-color: #F0D9B5;
+    padding: 40px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+h1 {
+    color: green;
+    margin-bottom: 30px;
+}
+
+.input-box {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: gray;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid black;
+    border-radius: 6px;
+    transition: border-color 0.3s;
+    font-size: 16px;
+}
+
+input[type="text"]:focus {
+    border-color: blue;
+    outline: none;
+}
+
+.start-button {
+    width: 100%;
+    padding: 15px;
+    background-color: lightgreen;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 20px;
+    transition: background-color 0.3s, opacity 0.3s;
+}
+
+.start-button:hover:not(:disabled) {
+    background-color: green;
+}
+
+.start-button:disabled {
+    background-color: gray;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
