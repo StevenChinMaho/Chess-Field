@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>簡易 AJAX 長輪詢聊天室</title>
+  <style>
+    #chat { border:1px solid #ccc; height:200px; overflow-y:scroll; padding:5px; }
+  </style>
+</head>
+<body>
+  <h2>聊天室</h2>
+  <div id="chat"></div>
+  <input type="text" id="msg" placeholder="輸入訊息...">
+  <button onclick="sendMsg()">送出</button>
+
+  <script>
+    let lastId = 0;
+    
+    function longPoll() {
+      fetch("poll.php?lastId=" + lastId)
+        .then(res => res.json())
+        .then(data => {
+          if (data.message) {
+            const chat = document.getElementById("chat");
+            chat.innerHTML += "<div>" + data.message + "</div>";
+            chat.scrollTop = chat.scrollHeight;
+            lastId = data.id;
+          }
+          console.log("Next Long Poll!");
+          longPoll(); // 繼續下一次輪詢
+        })
+        .catch(() => setTimeout(longPoll, 2000)); // 出錯時稍等再重試
+    }
+
+    function sendMsg() {
+      const msg = document.getElementById("msg").value;
+      fetch("send.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "msg=" + encodeURIComponent(msg)
+      });
+      document.getElementById("msg").value = "";
+    }
+
+    // 啟動長輪詢
+    longPoll();
+  </script>
+</body>
+</html>
