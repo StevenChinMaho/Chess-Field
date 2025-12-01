@@ -52,7 +52,7 @@ CREATE TABLE `moves` (
 
 CREATE TABLE `players` (
   `player_id` int(11) NOT NULL,
-  `player_identity` varchar(100) DEFAULT NULL COMMENT '玩家identity',
+  `player_identity` varchar(100) NOT NULL COMMENT '玩家identity',
   `player_name` varchar(20) DEFAULT NULL COMMENT '玩家名稱',
   `last_room_code` varchar(20) DEFAULT NULL COMMENT '最後輸入房號'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='玩家資料表';

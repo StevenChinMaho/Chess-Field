@@ -2,8 +2,28 @@
 require_once("includes/config.php");
 require_once("includes/asset-versions.php");
 
-// $_POST[""]
+$identity = $_COOKIE['identity'] ?? null;
 
+$stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
+$stmt->execute(['identity' => $identity]);
+$row = $stmt->fetch();
+
+if (!$row) {
+    setcookie("identity", "", time() - 3600, "/", "chess.mofumofu.ddns.net", true, true);
+    header("Location: index.php");
+}
+
+$stmt = $pdo->prepare("
+    UPDATE `players` 
+    SET `player_name` = :player_name, 
+        `last_room_code` = :last_room_code
+    WHERE `player_identity` = :identity
+");
+$stmt->execute([
+    'player_name' => $_POST['player-name'], 
+    'last_room_code' => $_POST['room-code'],
+    'identity' => $row['player_identity']
+]);
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">

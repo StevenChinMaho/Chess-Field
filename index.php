@@ -3,6 +3,7 @@ require_once("includes/config.php");
 require_once("includes/asset-versions.php");
 
 $player_name = "";
+$last_room_code = "";
 $identity = $_COOKIE['identity'] ?? null;
 
 $stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
@@ -12,10 +13,11 @@ $row = $stmt->fetch();
 if (!$row) {
     $identity = bin2hex(random_bytes(32));
     setcookie("identity", $identity, time() + 315360000, "/", "chess.mofumofu.ddns.net", true, true);
-    $stmt = $pdo->prepare("INSERT INTO `players`(`player_identity`) VALUES (:identity)");
+    $stmt = $pdo->prepare("INSERT INTO `players`(`player_identity`) VALUE (:identity)");
     $stmt->execute(['identity' => $identity ]);
 } else {
     $player_name = $row['player_name'];
+    $last_room_code = $row['last_room_code'];
 }
 ?>
 <!DOCTYPE html>
@@ -39,7 +41,7 @@ if (!$row) {
 
             <div class="input-box">
                 <label for="room-code">房號: </label>
-                <input type="text" id="room-code" name="room-code" placeholder="請輸入房號">
+                <input type="text" id="room-code" name="room-code" value="<?php echo htmlspecialchars($last_room_code); ?>" placeholder="請輸入房號">
             </div>
 
             <button id="start-game-btn" class="start-button" disabled>開始遊戲</button>
