@@ -1,7 +1,8 @@
 CREATE table `players` (
     `player_id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    `player_identity` VARCHAR(100) COMMENT '玩家identity',
     `player_name` VARCHAR(20) COMMENT '玩家名稱', 
-    `player_identity` VARCHAR(100) COMMENT '玩家identity'
+    `last_room_code` VARCHAR(20) COMMENT '最後輸入房號'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='玩家資料表';
 
 CREATE table `games` (
