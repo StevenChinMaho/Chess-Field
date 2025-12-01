@@ -1,3 +1,16 @@
+<?php 
+require_once("includes/config.php");
+
+$userName = "";
+
+if (isset($_COOKIE['identity'])) {
+    echo "歡迎回來，" . $_COOKIE['identity'];
+} else {
+    setcookie("identity", bin2hex(random_bytes(32)), time() + 315360000, "/", "chess.mofumofu.ddns.net", true, true); 
+    echo "第一次訪問，已設定 cookie！";
+
+}
+?>
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
