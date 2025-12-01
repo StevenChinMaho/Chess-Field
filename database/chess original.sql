@@ -1,8 +1,7 @@
 CREATE table `players` (
     `player_id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     `player_name` VARCHAR(20) COMMENT '玩家名稱', 
-    `player_session` VARCHAR(100) COMMENT '玩家session',
-    `player_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家剩餘時間'
+    `player_identity` VARCHAR(100) COMMENT '玩家identity'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='玩家資料表';
 
 CREATE table `games` (
@@ -10,6 +9,8 @@ CREATE table `games` (
     `chessboard` CHAR(64) DEFAULT 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR' COMMENT '棋盤狀態',
     `status` ENUM('waiting', 'deciding', 'playing', 'finished') DEFAULT 'waiting' COMMENT '遊戲狀態',
     `turn` CHAR(1) COMMENT '黑/白回合', 
+    `p1_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家一剩餘時間',
+    `p2_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家二剩餘時間',
     `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '上次落子時間',
     `castling_rights` CHAR(6) DEFAULT 'rkrRKR' NOT NULL COMMENT '王車易位規則',
     `en_passant_target` VARCHAR(2) DEFAULT NULL COMMENT '吃過路兵規則'
@@ -51,6 +52,9 @@ CREATE table `moves` (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='棋譜資料表';
+
+ALTER TABLE `players`
+    ADD UNIQUE KEY `uk_player_identity` (`player_identity`) COMMENT '確保identity不重複';
 
 ALTER TABLE `rooms`
     ADD UNIQUE KEY `uk_room_code` (`room_code`) COMMENT '查詢房號用';

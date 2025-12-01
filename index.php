@@ -1,14 +1,21 @@
 <?php 
 require_once("includes/config.php");
+require_once("includes/asset-versions.php");
 
-$userName = "";
+$player_name = "";
+$identity = $_COOKIE['identity'] ?? null;
 
-if (isset($_COOKIE['identity'])) {
-    echo "歡迎回來，" . $_COOKIE['identity'];
+$stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
+$stmt->execute(['identity' => $identity]);
+$row = $stmt->fetch();
+
+if (!$row) {
+    $identity = bin2hex(random_bytes(32));
+    setcookie("identity", $identity, time() + 315360000, "/", "chess.mofumofu.ddns.net", true, true);
+    $stmt = $pdo->prepare("INSERT INTO `players`(`player_identity`) VALUES (:identity)");
+    $stmt->execute(['identity' => $identity ]);
 } else {
-    setcookie("identity", bin2hex(random_bytes(32)), time() + 315360000, "/", "chess.mofumofu.ddns.net", true, true); 
-    echo "第一次訪問，已設定 cookie！";
-
+    $player_name = $row['player_name'];
 }
 ?>
 <!DOCTYPE html>
@@ -17,25 +24,25 @@ if (isset($_COOKIE['identity'])) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Field Homepage</title>
-    <link rel="stylesheet" href="css/homepage-style.css">
-    <script src="js/homepage-style.js" defer></script>
+    <link rel="stylesheet" href="css/homepage-style.css?v=<?php echo $asset_versions["homepage-style.css"]; ?>">
+    <script src="js/homepage-style.js?v=<?php echo $asset_versions["homepage-style.js"]; ?>" defer></script>
 </head>
 <body>
     <div class="homepage">
         <h1>Chess Field</h1>
 
-        <form method="post" action="room.php" id="roomForm">
+        <form method="post" action="set-room.php" id="roomForm">
             <div class="input-box">
-                <label for="playerName">玩家名字: </label>
-                <input type="text" id="playerName" name="playerName" placeholder="請輸入您的名字">
+                <label for="player-name">玩家名字: </label>
+                <input type="text" id="player-name" name="player-name" value="<?php echo htmlspecialchars($player_name); ?>" placeholder="請輸入您的名字">
             </div>
 
             <div class="input-box">
-                <label for="roomCode">房號: </label>
-                <input type="text" id="roomCode" name="roomCode" placeholder="請輸入房號">
+                <label for="room-code">房號: </label>
+                <input type="text" id="room-code" name="room-code" placeholder="請輸入房號">
             </div>
 
-            <button id="startGameBtn" class="start-button" disabled>開始遊戲</button>
+            <button id="start-game-btn" class="start-button" disabled>開始遊戲</button>
         </form>
     </div>
 </body>

@@ -1,11 +1,18 @@
+<?php
+require_once("includes/config.php");
+require_once("includes/asset-versions.php");
+
+// $_POST[""]
+
+?>
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Field Set Room</title>
-    <link rel="stylesheet" href="css/setRoom-style.css">
-    <script src="js/setRoom-style.js" defer></script>
+    <link rel="stylesheet" href="css/set-room-style.css?v=<?php echo $asset_versions["set-room-style.css"]; ?>">
+    <script src="js/set-room-style.js?v=<?php echo $asset_versions["set-room-style.js"]; ?>" defer></script>
 </head>
 
 <body>
