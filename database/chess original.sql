@@ -8,7 +8,7 @@ CREATE table `players` (
 CREATE table `games` (
     `game_id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
     `chessboard` CHAR(64) DEFAULT 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR' COMMENT '棋盤狀態',
-    `status` ENUM('waiting', 'deciding', 'playing', 'finished') DEFAULT 'waiting' COMMENT '遊戲狀態',
+    `status` ENUM('deciding', 'waiting', 'playing', 'finished') DEFAULT 'deciding' COMMENT '遊戲狀態',
     `turn` CHAR(1) COMMENT '黑/白回合', 
     `p1_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家一剩餘時間',
     `p2_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家二剩餘時間',
@@ -22,7 +22,7 @@ CREATE table `rooms` (
     `room_code` VARCHAR(20) NOT NULL COMMENT '房號',
     `p1_id` INT DEFAULT NULL COMMENT '玩家一',
     `p2_id` INT DEFAULT NULL COMMENT '玩家二',
-    `game_id`INT NOT NULL COMMENT '棋局',
+    `game_id` INT COMMENT '棋局',
     `last_conn` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '上次房內玩家上線時間',
     CONSTRAINT `fk_room_p1`
         FOREIGN KEY (`p1_id`)

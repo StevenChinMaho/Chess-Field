@@ -21,7 +21,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `games` (
   `game_id` int(11) NOT NULL,
   `chessboard` char(64) DEFAULT 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR' COMMENT '棋盤狀態',
-  `status` enum('waiting','deciding','playing','finished') DEFAULT 'waiting' COMMENT '遊戲狀態',
+  `status` enum('deciding', 'waiting', 'playing', 'finished') DEFAULT 'deciding' COMMENT '遊戲狀態',
   `turn` char(1) DEFAULT NULL COMMENT '黑/白回合',
   `p1_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家一剩餘時間',
   `p2_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家二剩餘時間',
@@ -68,7 +68,7 @@ CREATE TABLE `rooms` (
   `room_code` varchar(20) NOT NULL COMMENT '房號',
   `p1_id` int(11) DEFAULT NULL COMMENT '玩家一',
   `p2_id` int(11) DEFAULT NULL COMMENT '玩家二',
-  `game_id` int(11) NOT NULL COMMENT '棋局',
+  `game_id` int(11) COMMENT '棋局',
   `last_conn` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '上次房內玩家上線時間'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='房間資料表';
 
