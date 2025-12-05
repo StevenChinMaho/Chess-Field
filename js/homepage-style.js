@@ -10,6 +10,8 @@ function inputVerify () {
     }
 }
 
+inputVerify();
+
 playerName.addEventListener('input', inputVerify );
 roomCode.addEventListener('input', inputVerify);
 
