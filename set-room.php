@@ -2,13 +2,16 @@
 require_once("includes/config.php");
 require_once("includes/asset-versions.php");
 
+// ===驗證玩家身分===
+
 $identity = $_COOKIE['identity'] ?? null;
+$DEBUG = "";
 
 $stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
 $stmt->execute(['identity' => $identity]);
-$row = $stmt->fetch();
+$player = $stmt->fetch();
 
-if (!$row) {
+if (!$player) {
     setcookie("identity", "", time() - 3600, "/", "chess.mofumofu.ddns.net", true, true);
     header("Location: index.php");
 } else {
@@ -21,10 +24,28 @@ if (!$row) {
     $stmt->execute([
         'player_name' => $_POST['player-name'], 
         'last_room_code' => $_POST['room-code'],
-        'identity' => $row['player_identity']
+        'identity' => $player['player_identity']
     ]);
 }
 
+// ===創建/加入房間===
+
+$stmt = $pdo->prepare("SELECT * FROM `rooms` WHERE `room_code` = :room_code;");
+$stmt->execute(['room_code' => $_POST['room-code']]);
+$room = $stmt->fetch();
+
+//如果房間不存在就先建立
+if (!$room) {
+    $stmt = $pdo->prepare("INSERT INTO `rooms` (`room_code`, `p1_id`) VALUE (:room_code, :p1_id)");
+    $stmt->execute(["room_code" => $_POST['room-code'], "p1_id" => $player['player_id']]);
+
+    $stmt = $pdo->prepare("SELECT * FROM `rooms` WHERE `room_code` = :room_code;");
+    $stmt->execute(['room_code' => $_POST['room-code']]);
+    $room = $stmt->fetch();
+}
+
+// if ($room['last_conn'] )
+$DEBUG = $room['last_conn'];
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -34,9 +55,11 @@ if (!$row) {
     <title>Chess Field Set Room</title>
     <link rel="stylesheet" href="css/set-room-style.css?v=<?php echo $asset_versions["set-room-style.css"]; ?>">
     <script src="js/set-room-style.js?v=<?php echo $asset_versions["set-room-style.js"]; ?>" defer></script>
+    <script src="js/set-room-heartbeat.js?v=<?php echo $asset_versions["set-room-style.js"]; ?>" defer></script>
 </head>
 
 <body>
+    <a href="index.php" class="back-button">返回主頁</a>
     <div class="setup-container">
         <h2>棋局設置</h2>
 
@@ -81,5 +104,8 @@ if (!$row) {
 
         <button class="submit-btn" id="start-btn">繼續</button>
     </div>
+    <?php
+    //var_dump(time());
+    ?>
 </body>
 </html>

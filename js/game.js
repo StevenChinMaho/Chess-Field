@@ -1,0 +1,235 @@
+const boardElement = document.getElementById('board');  // 負責棋盤棋子
+const stateElement = document.getElementById('status');  // 負責現在輪到誰
+const logsElement = document.getElementById('logs');  // 負責棋譜紀錄
+
+let chessboardArr = [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+];
+
+let turn = 'w';  // 輪到誰
+let selected = null;  // 被選取的棋子
+let hints = [];  // 棋子可以合法移動到哪裡
+let hasMoved = {};  // 棋子是否移動過
+let enPassantTarget = null;  // 過路兵的攻擊點
+
+
+const symbols = {
+    'k': '♚\uFE0E', 'q': '♛\uFE0E', 'r': '♜\uFE0E', 'b': '♝\uFE0E', 'n': '♞\uFE0E', 'p': '♟\uFE0E',
+    'K': '♚\uFE0E', 'Q': '♛\uFE0E', 'R': '♜\uFE0E', 'B': '♝\uFE0E', 'N': '♞\uFE0E', 'P': '♟\uFE0E'
+}
+
+function pieceDetail(pieceType) {
+    if (!pieceType)
+        return null;
+    const isWhite = pieceType === pieceType.toUpperCase();
+    return {
+        color: isWhite ? 'w' : 'b',
+        type: pieceType.toLowerCase()
+    };
+}
+
+function getMoves(r, c, p) { 
+    const detail = pieceDetail(p);
+    const color = detail.color;
+    const type = detail.type;
+
+    let m = [];  // 儲存棋子可以走的位置
+
+    const inBoard = (r,c) => r>=0 && r<8 && c>=0 && c<8;  // 棋子有沒有在棋盤的範圍裡
+
+    const add = (tr,tc) => {
+        if(!inBoard(tr,tc)) 
+            return false;
+        const target = chessboardArr[tr][tc];
+        if(!target) { 
+            m.push({r:tr, c:tc}); return true; 
+        }
+        const targetDetail = pieceDetail(target);
+        if(targetDetail.color !== color)  // 判斷target顏色
+            m.push({r:tr, c:tc});
+        return false;
+    };
+
+    if(type === 'p') {  // 兵的走法
+        const d = (color==='w') ? -1 : 1;  // 白兵往上走-1，黑兵往下走+1
+        const start = (color==='w') ? 6 : 1;  // 兵的起始位置
+
+        if(inBoard(r+d,c) && !chessboardArr[r+d][c]) {  // 往前走一格
+            m.push({r:r+d, c:c});
+            if(r===start && !chessboardArr[r+d*2][c])  // 往前走兩格
+                m.push({r:r+d*2, c:c});
+        }
+        [[r+d,c-1], [r+d,c+1]].forEach(([tr,tc]) => {  // 斜吃: 有棋子且要是對手的棋子
+            if(inBoard(tr,tc)) { 
+                const t = chessboardArr[tr][tc]; 
+                if(t) {
+                    const tDetail = pieceDetail(t);
+                    if(tDetail.color !== color) 
+                        m.push({r:tr, c:tc}); 
+                }
+                else if(enPassantTarget && tr === enPassantTarget.r && tc === enPassantTarget.c) {  // 兵要走到的位置是空的，但那是過路兵的攻擊點
+                    m.push({r:tr, c:tc, isEnPassant: true});  // 把過路兵加入棋子可以走的位置
+                }
+            }
+        });
+    }
+    else if(type === 'n') {  // 騎士的走法
+        [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => add(r+dr, c+dc)); 
+    }
+    else if(type === 'k') {  // 國王的走法
+        [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc]) => add(r+dr, c+dc));
+
+        if(!hasMoved[`${r},${c}`]) {  // 國王沒動過
+            // 短易位
+            if(!chessboardArr[r][c+1] && !chessboardArr[r][c+2]) {  // 國王右側兩格是不是空的
+                if (chessboardArr[r][c+3] && !hasMoved[`${r},${c+3}`]) {  // 右邊的城堡有沒有動過
+                     m.push({r:r, c:c+2, isCastling: 'short'});  // 把短易位加入棋子可以走的位置
+                }
+            }
+
+            // 長易位
+            if (!chessboardArr[r][c-1] && !chessboardArr[r][c-2] && !chessboardArr[r][c-3]) {  // 國王左側三格是不是空的
+                if (chessboardArr[r][c-4] && !hasMoved[`${r},${c-4}`]) {  // 左邊的城堡有沒有動過
+                    m.push({r:r, c:c-2, isCastling: 'long'});  // 把長易位加入棋子可以走的位置
+                }
+            }
+        }
+    }
+    else {
+        const directions = [];
+
+        if(type!=='b')  // 主教的走法
+            directions.push([-1,0],[1,0],[0,-1],[0,1]);
+        if(type!=='r')  // 城堡的走法
+            directions.push([-1,-1],[-1,1],[1,-1],[1,1]);
+        directions.forEach(([dr,dc]) => {  // 皇后的走法
+            for(let i=1; i<8; i++) { 
+                if(!add(r+dr*i, c+dc*i)) break; 
+            } 
+        });
+    }
+
+    return m;
+}
+
+function render() {
+    boardElement.innerHTML = '';  // 清空棋盤
+    
+    for(let r=0; r<8; r++) {
+        for(let c=0; c<8; c++) {
+            const sq = document.createElement('div');
+            sq.className = `sq ${(r+c)%2===0 ? 'light' : 'dark'}`;  // 格子的顏色(深、淺)
+            
+            if(selected && selected.r===r && selected.c===c)  // 如果格子被點擊會變色
+                sq.classList.add('selected');
+
+            if(hints.find(h => h.r===r && h.c===c)) {  // 合法移動的提示
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                sq.appendChild(dot);  // 把點放到格子裡
+            }
+
+            const p = chessboardArr[r][c];
+            if(p) {
+                const div = document.createElement('div');
+                const detail = pieceDetail(p);
+                
+                div.innerText = symbols[p];  // 填入棋子Unicode
+                div.className = `piece ${detail.color}`;  // 棋子顏色
+                
+                sq.appendChild(div);  // 把棋子放到格子裡
+            }
+
+            sq.onclick = () => click(r, c);  // 只要玩家點擊格子，就會觸發click
+            boardElement.appendChild(sq);  // 把格子放到棋盤裡
+        }
+    }
+    stateElement.innerText = (turn==='w' ? "White" : "Black") + "'s Turn";
+}
+
+function click(r, c) {
+    const p = chessboardArr[r][c];
+    let pDetail = null;
+    if (p)
+        pDetail = pieceDetail(p);
+
+    if(p && pDetail.color === turn) {  // 點到自己的棋子
+        selected = {r,c};
+        hints = getMoves(r, c, p);  // 計算棋子能走到哪
+        render();
+        return; 
+    }
+
+    if(selected) {  // 移動棋子
+        const canMove = hints.find(h => h.r===r && h.c===c);  // 檢查點到的格子是不是棋子可以合法移動到的
+
+        if(canMove) {
+            const fromR = selected.r;
+            const fromC = selected.c;
+            const pieceOriginal = chessboardArr[selected.r][selected.c];  // 拿起原本位置的棋子
+            const detailOriginal = pieceDetail(pieceOriginal);
+            chessboardArr[r][c] = pieceOriginal;  // 放到新的位置
+            chessboardArr[selected.r][selected.c] = null;  // 清空舊的位置
+
+            hasMoved[`${fromR},${fromC}`] = true;  // 表示棋子已經移動過
+            hasMoved[`${r},${c}`] = true;  // 新的位置也算移動過
+
+            if (canMove.isCastling) {
+                if (canMove.isCastling === 'short') {  // 短易位
+                    const rook = chessboardArr[r][fromC+3];
+                    chessboardArr[r][fromC+1] = rook;
+                    chessboardArr[r][fromC+3] = null;
+                    hasMoved[`${r},${fromC+3}`] = true;  // 表示城堡動過了
+                } else {  // 長易位
+                    const rook = chessboardArr[r][fromC-4];
+                    chessboardArr[r][fromC-1] = rook;
+                    chessboardArr[r][fromC-4] = null;
+                    hasMoved[`${r},${fromC-4}`] = true;
+                }
+            }
+
+            if (canMove.isEnPassant) {  // 移除被吃得兵
+                chessboardArr[fromR][c] = null; 
+            }
+
+            if (detailOriginal.type === 'p' && Math.abs(r - fromR) === 2) {
+                // 過路兵的點在起點和終點的中間
+                enPassantTarget = {
+                    r: (r + fromR) / 2,
+                    c: c
+                };
+            } else {
+                // 如果不是走兩格，或者不是兵，重置過路兵的點 (過路兵機會只有一回合)
+                enPassantTarget = null;
+            }
+
+            if(detailOriginal.type === 'p' && (r===0 || r===7)) {  // 兵的升變(目前只有后)
+                chessboardArr[r][c] = (turn === 'w') ? 'Q' : 'q'; 
+            }
+            
+            // 棋譜紀錄
+            logsElement.innerHTML += `<div>${turn.toUpperCase()}: ${detailOriginal.type} -> ${String.fromCharCode(97+c)}${8-r}</div>`; // 0,1,2,... 轉成 a,b,c,...
+            logsElement.scrollTop = logsElement.scrollHeight;  // 自動捲到底部
+
+            turn = (turn==='w') ? 'b' : 'w';  // 交換回合
+            selected = null;
+            hints = [];
+            render();
+        } 
+        else { 
+            selected = null;  // 清空棋子被選取的狀態
+            hints = [];
+            render();
+        }
+    }
+}
+
+document.getElementById('btn-reset').onclick = () => location.reload();  // Restart按鈕
+render();  // game.php執行後，先把棋盤棋子畫出來

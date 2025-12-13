@@ -1,0 +1,154 @@
+:root {
+    --bg: #B58863;
+    --panel: #F0D9B5;
+    --light: #eeeed2;
+    --dark: #769656;
+}
+
+body {
+    background: var(--bg);
+    color: white;
+    font-family: 'Microsoft JhengHei', 'PingFang TC', 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    user-select: none;
+}
+
+.game-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+    max-width: 900px;
+    justify-content: center;
+}
+
+.board-area {
+    flex: 1;
+    min-width: 320px;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.player-bar {
+    padding: 10px 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #3a3a3a;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr); /* 切成 8 行，每行寬度相等 (1fr) */
+    aspect-ratio: 1/1; /* 保持正方形 */
+    border: 5px solid var(--panel);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sq {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    aspect-ratio: 1/1;
+    width: 100%;
+    overflow: hidden;
+}
+
+.sq.light {background: var(--light);}
+.sq.dark {background: var(--dark);}
+
+.sq.selected {
+    background: rgba(255, 255, 50, 0.6) !important;
+}
+
+.piece {
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+    font-size: 50px;
+    line-height: 1;
+}
+
+.piece.w {
+    color: white;
+    text-shadow:
+        1px 1px 0 black,
+        -1px -1px 0 black,
+        1px -1px 0 black,
+        -1px 1px 0 black,
+        1px 0 0 black,
+        -1px 0 0 black,
+        0 1px 0 black,
+        0 -1px 0 black;
+}
+
+.piece.b {
+    color: black;
+}
+
+.dot {
+    width: 25%;
+    height: 25%;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    position: absolute;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.side-bar {
+    width: 300px;
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+}
+
+.moves {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    font-family: monospace;
+    background: #2b2926;
+}
+
+.moves div {
+    padding: 4px;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.ctrls {
+    padding: 15px;
+    background: black;
+    text-align: center;
+}
+
+.status {
+    color: #3a3a3a;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    background: gray;
+    color: white;
+    font-weight: bold;
+}
+
+.btn:hover {
+    background: lightgray;
+}
