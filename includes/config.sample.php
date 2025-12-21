@@ -4,6 +4,8 @@ define('DB_USER', 'user');
 define('DB_PASS', 'password');
 define('DB_NAME', 'chess_db');
 
+date_default_timezone_set('Asia/Taipei');
+
 try {
     $pdo = new PDO(
         "mysql:host=" . DB_HOST . "; dbname=" . DB_NAME . ";charset=utf8mb4", 
