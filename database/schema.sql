@@ -68,7 +68,7 @@ CREATE TABLE `rooms` (
   `room_code` varchar(20) NOT NULL COMMENT '房號',
   `p1_id` int(11) DEFAULT NULL COMMENT '玩家一',
   `p2_id` int(11) DEFAULT NULL COMMENT '玩家二',
-  `game_id` int(11) COMMENT '棋局',
+  `game_id` int(11) NOT NULL COMMENT '棋局',
   `last_conn` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '上次房內玩家上線時間'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='房間資料表';
 

@@ -22,7 +22,7 @@ CREATE table `rooms` (
     `room_code` VARCHAR(20) NOT NULL COMMENT '房號',
     `p1_id` INT DEFAULT NULL COMMENT '玩家一',
     `p2_id` INT DEFAULT NULL COMMENT '玩家二',
-    `game_id` INT COMMENT '棋局',
+    `game_id` INT NOT NULL COMMENT '棋局',
     `last_conn` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '上次房內玩家上線時間',
     CONSTRAINT `fk_room_p1`
         FOREIGN KEY (`p1_id`)
