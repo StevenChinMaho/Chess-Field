@@ -96,10 +96,13 @@ function startGame() {
     //       `陣營: ${c.side}\n` +
     //       `時間: ${currentSettings.timeMinutes} 分 + ${currentSettings.increment} 秒\n` +
     //       `輔助: ${currentSettings.assist ? '開啟' : '關閉'}`);
+    const roomCode = document.getElementById("room-code").value;
+    const urlObj = new URL("game.php", window.location.href);
+    urlObj.searchParams.set("room-code", roomCode);
 
     const form = document.createElement("form");
     form.method = "POST";
-    form.action = "game.php";
+    form.action = urlObj.toString();
 
     for (const key in currentSettings) {
         const input = document.createElement("input");

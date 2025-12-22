@@ -175,6 +175,31 @@ function click(r, c) {
             const fromC = selected.c;
             const pieceOriginal = chessboardArr[selected.r][selected.c];  // 拿起原本位置的棋子
             const detailOriginal = pieceDetail(pieceOriginal);
+
+            let moveString = "";
+            const isCapture = chessboardArr[r][c] !== null || canMove.isEnPassant;
+            if (canMove.isCastling) {
+                moveString = (canMove.isCastling === 'short') ? "O-O" : "O-O-O";
+            } 
+            else {
+                const pieceChar = detailOriginal.type.toUpperCase(); // P, N, B...
+                const coords = String.fromCharCode(97 + c) + (8 - r); // e.g., e4
+
+                if (detailOriginal.type === 'p') {
+                    if (isCapture) {
+                        moveString = String.fromCharCode(97 + fromC) + "x" + coords;
+                    } else {
+                        moveString = coords;
+                    }
+                } else {
+                    moveString = pieceChar + (isCapture ? "x" : "") + coords;
+                }
+
+                if (detailOriginal.type === 'p' && (r === 0 || r === 7)) {
+                    moveString += "=Q";
+                }
+            }
+
             chessboardArr[r][c] = pieceOriginal;  // 放到新的位置
             chessboardArr[selected.r][selected.c] = null;  // 清空舊的位置
 
@@ -215,8 +240,13 @@ function click(r, c) {
             }
             
             // 棋譜紀錄
-            logsElement.innerHTML += `<div>${turn.toUpperCase()}: ${detailOriginal.type} -> ${String.fromCharCode(97+c)}${8-r}</div>`; // 0,1,2,... 轉成 a,b,c,...
-            logsElement.scrollTop = logsElement.scrollHeight;  // 自動捲到底部
+            const logEntry = document.createElement('div');
+            // 加上顏色提示
+            logEntry.style.color = (turn === 'w') ? '#fff' : '#aaa';
+            logEntry.innerText = moveString; // 例如 "Nf3" 或 "exd5"
+            
+            logsElement.appendChild(logEntry);
+            logsElement.scrollTop = logsElement.scrollHeight;
 
             turn = (turn==='w') ? 'b' : 'w';  // 交換回合
             selected = null;

@@ -4,48 +4,145 @@ require_once("includes/asset-versions.php");
 
 // ===驗證玩家身分===
 
+$player_name = $_POST['player-name'] ?? null;
+$room_code = $_POST['room-code'] ?? null;
 $identity = $_COOKIE['identity'] ?? null;
-$DEBUG = "";
 
 $stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
 $stmt->execute(['identity' => $identity]);
 $player = $stmt->fetch();
 
-if (!$player) {
+if (!$player || !$player_name || !$room_code) {
     setcookie("identity", "", time() - 3600, "/", "chess.mofumofu.ddns.net", true, true);
     header("Location: index.php");
+    die();
 } else {
-    $stmt = $pdo->prepare("
-        UPDATE `players` 
-        SET `player_name` = :player_name, 
-            `last_room_code` = :last_room_code
-        WHERE `player_identity` = :identity
+    //註冊玩家名稱
+    $stmt = $pdo->prepare("UPDATE `players` 
+                           SET `player_name` = :player_name, 
+                               `last_room_code` = :last_room_code
+                           WHERE `player_identity` = :identity
     ");
     $stmt->execute([
-        'player_name' => $_POST['player-name'], 
-        'last_room_code' => $_POST['room-code'],
+        'player_name' => $player_name, 
+        'last_room_code' => $room_code,
         'identity' => $player['player_identity']
     ]);
 }
+$player_id = $player['player_id'];
 
 // ===創建/加入房間===
 
-$stmt = $pdo->prepare("SELECT * FROM `rooms` WHERE `room_code` = :room_code;");
+$stmt = $pdo->prepare("SELECT r.*, g.status, g.game_id 
+                       FROM `rooms` r
+                       LEFT JOIN `games` g ON r.game_id = g.game_id
+                       WHERE r.room_code = :room_code;");
 $stmt->execute(['room_code' => $_POST['room-code']]);
 $room = $stmt->fetch();
 
-//如果房間不存在就先建立
+// 如果房間不存在就先建立
 if (!$room) {
-    $stmt = $pdo->prepare("INSERT INTO `rooms` (`room_code`, `p1_id`) VALUE (:room_code, :p1_id)");
-    $stmt->execute(["room_code" => $_POST['room-code'], "p1_id" => $player['player_id']]);
+    // 創建遊戲
+    $stmt = $pdo->prepare("INSERT INTO `games` (`status`) VALUE ('deciding');");
+    $stmt->execute();
+    $game_id = $pdo->lastInsertId();
 
-    $stmt = $pdo->prepare("SELECT * FROM `rooms` WHERE `room_code` = :room_code;");
-    $stmt->execute(['room_code' => $_POST['room-code']]);
-    $room = $stmt->fetch();
+    // 創建房間並代入game_id
+    $stmt = $pdo->prepare("INSERT INTO `rooms` (`room_code`, `game_id`, `p1_id`) VALUE (:room_code, :game_id, :player_id)");
+    $stmt->execute([
+        'room_code' => $_POST['room-code'], 
+        'game_id' => $game_id,
+        'player_id' => $player['player_id']
+    ]);
+
+    $is_p1 = true;
+} else {
+    // 房間存在，檢查過期
+    $last_conn = new DateTime($room['last_conn']);
+    $now = new DateTime();
+
+    //如果房間已過期就重置
+    if ($now->getTimestamp() - $last_conn->getTimestamp() > 180) {
+        $stmt = $pdo->prepare("INSERT INTO `games` (`status`) VALUE ('deciding');");
+        $stmt->execute();
+        $new_game_id = $pdo->lastInsertId();
+
+        $stmt = $pdo->prepare("UPDATE `rooms` 
+                                SET `p1_id` = NULL,
+                                    `p2_id` = NULL,
+                                    `game_id` = :game_id,
+                                    `last_conn` = NOW()
+                                WHERE `room_code` = :room_code;");
+        $stmt->execute(['room_code' => $room['room_code'], 'game_id' => $new_game_id]);
+
+        // 更新當前變數狀態
+        $room['status'] = 'deciding';
+        $room['p1_id'] = NULL;
+        $room['p2_id'] = NULL;
+    }
+
+    // ===核心跳轉與補位邏輯===
+
+    $is_p1 = ($room['p1_id'] == $player_id);
+    $is_p2 = ($room['p2_id'] == $player_id);
+
+    // 如果其中一個是自己
+    if ($is_p1 || $is_p2) {
+        if ($room['status'] === 'deciding') {
+            if ($is_p2) {
+                // 異常狀態：deciding階段不該有P2，踢回首頁或轉成觀戰(這裡先踢回)
+                header("Location: index.php?error=invalid_state");
+                exit;
+            }
+            // 如果是 P1 且是 deciding -> 停留在本頁 (繼續設定)
+        } else {
+            // 狀態不是 deciding (waiting/playing/finished) -> 進入遊戲頁面
+            header("Location: game.php?" . http_build_query(['room_code' => $room_code]));
+            exit;
+        }
+    } 
+    // 我是新來的 (不在房內)
+    else {
+        if ($room['status'] === 'deciding') {
+            // 狀態為決定中
+            if (empty($room['p1_id'])) {
+                // P1 是空的 -> 我補位成為 P1
+                $stmt = $pdo->prepare("UPDATE `rooms` SET `p1_id` = ? WHERE `room_code` = ? AND `p1_id` IS NULL");
+                $stmt->execute([$player_id, $room_code]);
+                // 成功搶到 P1 -> 停留在本頁
+                $is_p1 = true;
+            } else {
+                // P1 已經有人，且狀態是 deciding -> 禁止進入 (不允許 P2)
+                header("Location: index.php?error=room_setup_in_progress");
+                exit;
+            }
+        } 
+        elseif ($room['status'] === 'waiting') {
+            // 狀態為等待中 (房主設定好了)
+            if (empty($room['p2_id'])) {
+                // P2 是空的 -> 我補位成為 P2
+                $stmt = $pdo->prepare("UPDATE `rooms` SET `p2_id` = ? WHERE `room_code` = ? AND `p2_id` IS NULL");
+                $stmt->execute([$player_id, $room_code]);
+                
+                // 補位成功 -> 跳轉到遊戲頁面
+                header("Location: game.php?" . http_build_query(['room_code' => $room_code]));
+                exit;
+            } else {
+                // P2 也滿了 -> 房間額滿
+                header("Location: index.php?error=room_full");
+                exit;
+            }
+        } 
+        else {
+            // 狀態是 playing 或 finished -> 房間已開打或結束
+            // 根據需求，這裡可以選擇踢回首頁，或是允許觀戰(若是觀戰則直接導向 game.php)
+            // 這裡先設為踢回
+            header("Location: index.php?error=game_started");
+            exit;
+        }
+    }
 }
 
-// if ($room['last_conn'] )
-$DEBUG = $room['last_conn'];
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -54,11 +151,12 @@ $DEBUG = $room['last_conn'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Field Set Room</title>
     <link rel="stylesheet" href="css/set-room-style.css?v=<?php echo $asset_versions["set-room-style.css"]; ?>">
-    <script src="js/set-room-style.js?v=<?php echo $asset_versions["set-room-style.js"]; ?>" defer></script>
-    <script src="js/set-room-heartbeat.js?v=<?php echo $asset_versions["set-room-style.js"]; ?>" defer></script>
+    <script src="js/set-room.js?v=<?php echo $asset_versions["set-room.js"]; ?>" defer></script>
+    <script src="js/room-heartbeat.js?v=<?php echo $asset_versions["room-heartbeat.js"]; ?>" defer></script>
 </head>
 
 <body>
+    <input type="hidden" id="room-code" value="<?php echo htmlspecialchars($room['room_code']); ?>">
     <a href="index.php" class="back-button">返回主頁</a>
     <div class="setup-container">
         <h2>棋局設置</h2>
@@ -104,8 +202,5 @@ $DEBUG = $room['last_conn'];
 
         <button class="submit-btn" id="start-btn">繼續</button>
     </div>
-    <?php
-    //var_dump(time());
-    ?>
 </body>
 </html>

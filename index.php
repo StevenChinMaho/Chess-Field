@@ -26,8 +26,8 @@ if (!$row) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Field Homepage</title>
-    <link rel="stylesheet" href="css/homepage-style.css?v=<?php echo $asset_versions["homepage-style.css"]; ?>">
-    <script src="js/homepage-style.js?v=<?php echo $asset_versions["homepage-style.js"]; ?>" defer></script>
+    <link rel="stylesheet" href="css/index-style.css?v=<?php echo $asset_versions["index-style.css"]; ?>">
+    <script src="js/index.js?v=<?php echo $asset_versions["index.js"]; ?>" defer></script>
 </head>
 <body>
     <div class="homepage">
