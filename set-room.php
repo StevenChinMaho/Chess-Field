@@ -5,7 +5,7 @@ require_once("includes/asset-versions.php");
 // ===驗證玩家身分===
 
 $player_name = $_POST['player-name'] ?? null;
-$room_code = $_POST['room-code'] ?? null;
+$room_code = $_POST['room_code'] ?? null;
 $identity = $_COOKIE['identity'] ?? null;
 
 $stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
@@ -37,7 +37,7 @@ $stmt = $pdo->prepare("SELECT r.*, g.status, g.game_id
                        FROM `rooms` r
                        LEFT JOIN `games` g ON r.game_id = g.game_id
                        WHERE r.room_code = :room_code;");
-$stmt->execute(['room_code' => $_POST['room-code']]);
+$stmt->execute(['room_code' => $_POST['room_code']]);
 $room = $stmt->fetch();
 
 // 如果房間不存在就先建立
@@ -50,7 +50,7 @@ if (!$room) {
     // 創建房間並代入game_id
     $stmt = $pdo->prepare("INSERT INTO `rooms` (`room_code`, `game_id`, `p1_id`) VALUE (:room_code, :game_id, :player_id)");
     $stmt->execute([
-        'room_code' => $_POST['room-code'], 
+        'room_code' => $_POST['room_code'], 
         'game_id' => $game_id,
         'player_id' => $player['player_id']
     ]);
@@ -156,7 +156,7 @@ if (!$room) {
 </head>
 
 <body>
-    <input type="hidden" id="room-code" value="<?php echo htmlspecialchars($room['room_code']); ?>">
+    <input type="hidden" id="room_code" value="<?php echo htmlspecialchars($room['room_code']); ?>">
     <a href="index.php" class="back-button">返回主頁</a>
     <div class="setup-container">
         <h2>棋局設置</h2>

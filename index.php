@@ -40,8 +40,8 @@ if (!$row) {
             </div>
 
             <div class="input-box">
-                <label for="room-code">房號: </label>
-                <input type="text" id="room-code" name="room-code" value="<?php echo htmlspecialchars($last_room_code); ?>" placeholder="請輸入房號">
+                <label for="room_code">房號: </label>
+                <input type="text" id="room_code" name="room_code" value="<?php echo htmlspecialchars($last_room_code); ?>" placeholder="請輸入房號">
             </div>
 
             <button id="start-game-btn" class="start-button" disabled>開始遊戲</button>

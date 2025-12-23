@@ -2,18 +2,15 @@ const boardElement = document.getElementById('board');  // 負責棋盤棋子
 const stateElement = document.getElementById('status');  // 負責現在輪到誰
 const logsElement = document.getElementById('logs');  // 負責棋譜紀錄
 
-let chessboardArr = [
-    ['r','n','b','q','k','b','n','r'],
-    ['p','p','p','p','p','p','p','p'],
-    [null,null,null,null,null,null,null,null],
-    [null,null,null,null,null,null,null,null],
-    [null,null,null,null,null,null,null,null],
-    [null,null,null,null,null,null,null,null],
-    ['P','P','P','P','P','P','P','P'],
-    ['R','N','B','Q','K','B','N','R']
-];
+// 讀取 PHP 傳來的設定
+const roomCode = GAME_CONFIG.roomCode;
+const mySide = GAME_CONFIG.mySide;
 
-let turn = 'w';  // 輪到誰
+// 初始化棋盤
+let chessboardArr = stringToBoard(GAME_CONFIG.initialBoard);
+
+
+let turn = GAME_CONFIG.initialTurn;  // 輪到誰
 let selected = null;  // 被選取的棋子
 let hints = [];  // 棋子可以合法移動到哪裡
 let hasMoved = {};  // 棋子是否移動過
@@ -23,6 +20,31 @@ let enPassantTarget = null;  // 過路兵的攻擊點
 const symbols = {
     'k': '♚\uFE0E', 'q': '♛\uFE0E', 'r': '♜\uFE0E', 'b': '♝\uFE0E', 'n': '♞\uFE0E', 'p': '♟\uFE0E',
     'K': '♚\uFE0E', 'Q': '♛\uFE0E', 'R': '♜\uFE0E', 'B': '♝\uFE0E', 'N': '♞\uFE0E', 'P': '♟\uFE0E'
+}
+
+// 將 64字元字串轉為 8x8 陣列的 Helper
+function stringToBoard(str) {
+    let arr = [];
+    for(let r=0; r<8; r++) {
+        let row = [];
+        for(let c=0; c<8; c++) {
+            let char = str[r*8 + c];
+            row.push(char === '.' ? null : char);
+        }
+        arr.push(row);
+    }
+    return arr;
+}
+
+// 將 8x8 陣列轉為 64字元字串 (給後端用)
+function boardToString(arr) {
+    let str = "";
+    for(let r=0; r<8; r++) {
+        for(let c=0; c<8; c++) {
+            str += (arr[r][c] === null ? '.' : arr[r][c]);
+        }
+    }
+    return str;
 }
 
 function pieceDetail(pieceType) {
@@ -122,6 +144,19 @@ function getMoves(r, c, p) {
 function render() {
     boardElement.innerHTML = '';  // 清空棋盤
     
+    // 如果我是黑方，視角要翻轉 (從 row 7 畫到 0，col 7 畫到 0)
+    // 這裡我們用 CSS flex-direction 或者 JS 迴圈倒著跑都可以
+    // 簡單解法：根據 mySide 決定是否倒置棋盤 HTML
+    
+    const isFlipped = (mySide === 'b');
+    
+    // 這裡維持原本邏輯生成 DOM，但如果是黑方，我們透過 CSS class 讓它旋轉
+    if (isFlipped) {
+        boardElement.style.transform = "rotate(180deg)";
+    } else {
+        boardElement.style.transform = "none";
+    }
+
     for(let r=0; r<8; r++) {
         for(let c=0; c<8; c++) {
             const sq = document.createElement('div');
@@ -130,6 +165,7 @@ function render() {
             if(selected && selected.r===r && selected.c===c)  // 如果格子被點擊會變色
                 sq.classList.add('selected');
 
+            // 提示點
             if(hints.find(h => h.r===r && h.c===c)) {  // 合法移動的提示
                 const dot = document.createElement('div');
                 dot.className = 'dot';
@@ -144,6 +180,11 @@ function render() {
                 div.innerText = symbols[p];  // 填入棋子Unicode
                 div.className = `piece ${detail.color}`;  // 棋子顏色
                 
+                // ★ 關鍵：因為外層 board 轉了 180度，裡面的棋子也要轉回來，不然會倒立
+                if (isFlipped) {
+                    div.style.transform = "rotate(180deg)";
+                }
+                
                 sq.appendChild(div);  // 把棋子放到格子裡
             }
 
@@ -151,16 +192,27 @@ function render() {
             boardElement.appendChild(sq);  // 把格子放到棋盤裡
         }
     }
-    stateElement.innerText = (turn==='w' ? "White" : "Black") + "'s Turn";
+    
+    // 狀態顯示優化
+    let statusText = (turn === 'w' ? "白方回合" : "黑方回合");
+    if (turn === mySide) statusText += " (輪到你了)";
+    stateElement.innerText = statusText;
 }
 
 function click(r, c) {
+    // 觀戰者或非自己回合不能操作
+    if (mySide === 'spectator') return;
+    // 如果現在不是我的回合，且我不是在選自己的棋子(防止亂點)，則禁止
+    // 但為了讓使用者可以點選查看自己的棋子，我們只在「嘗試移動」時攔截
+    
     const p = chessboardArr[r][c];
-    let pDetail = null;
-    if (p)
-        pDetail = pieceDetail(p);
+    let pDetail = p ? pieceDetail(p) : null;
 
+    // A. 選擇棋子
     if(p && pDetail.color === turn) {  // 點到自己的棋子
+        // 只能選自己顏色的棋子 (且要是自己的回合)
+        if (turn !== mySide) return; 
+
         selected = {r,c};
         hints = getMoves(r, c, p);  // 計算棋子能走到哪
         render();
@@ -248,6 +300,13 @@ function click(r, c) {
             logsElement.appendChild(logEntry);
             logsElement.scrollTop = logsElement.scrollHeight;
 
+            // 1. 產生棋盤字串
+            const newBoardStr = boardToString(chessboardArr);
+            
+            // 2. 發送給後端
+            sendMoveToServer(newBoardStr, "moveString變數"); // 記得把你原本算好的 moveString 傳進去
+
+            // 3. 本地切換回合 (等待伺服器確認)
             turn = (turn==='w') ? 'b' : 'w';  // 交換回合
             selected = null;
             hints = [];
@@ -261,5 +320,52 @@ function click(r, c) {
     }
 }
 
+// === AJAX 發送移動 ===
+async function sendMoveToServer(boardStr, moveText) {
+    const formData = new FormData();
+    formData.append('room_code', roomCode);
+    formData.append('board', boardStr);
+    formData.append('move_text', moveText);
+
+    try {
+        const res = await fetch('api/make-move.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.status !== 'success') {
+            alert("移動失敗: " + data.message);
+            location.reload(); // 同步失敗就重整
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// === SSE 監聽對手移動 ===
+function initSSE() {
+    const evtSource = new EventSource(`api/game-sse.php?room_code=${roomCode}`);
+    
+    evtSource.addEventListener('update', function(e) {
+        const data = JSON.parse(e.data);
+        console.log("收到更新:", data);
+        
+        // 更新本地資料
+        chessboardArr = stringToBoard(data.board);
+        turn = data.turn;
+        
+        // 重新繪製
+        selected = null;
+        hints = [];
+        render();
+    });
+    
+    evtSource.onerror = function() {
+        console.log("SSE 連線中斷，嘗試重連...");
+    };
+}
+
 document.getElementById('btn-reset').onclick = () => location.reload();  // Restart按鈕
+// 啟動
+initSSE();
 render();  // game.php執行後，先把棋盤棋子畫出來
