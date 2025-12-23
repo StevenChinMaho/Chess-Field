@@ -22,7 +22,7 @@ CREATE TABLE `games` (
   `game_id` int(11) NOT NULL,
   `chessboard` char(64) DEFAULT 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR' COMMENT '棋盤狀態',
   `status` enum('deciding', 'waiting', 'playing', 'finished') DEFAULT 'deciding' COMMENT '遊戲狀態',
-  `turn` char(1) DEFAULT NULL COMMENT '黑/白回合',
+  `turn` char(1) DEFAULT 'w' NOT NULL COMMENT '黑/白回合',
   `p1_side` CHAR(1) COMMENT '玩家一的陣營',
   `p1_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家一剩餘時間',
   `p2_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家二剩餘時間',
