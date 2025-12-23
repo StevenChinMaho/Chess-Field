@@ -9,7 +9,7 @@ const mySide = GAME_CONFIG.mySide;
 // 初始化棋盤
 let chessboardArr = stringToBoard(GAME_CONFIG.initialBoard);
 
-
+let isPlaying = false;
 let turn = GAME_CONFIG.initialTurn;  // 輪到誰
 let selected = null;  // 被選取的棋子
 let hints = [];  // 棋子可以合法移動到哪裡
@@ -202,6 +202,8 @@ function render() {
 function click(r, c) {
     // 觀戰者或非自己回合不能操作
     if (mySide === 'spectator') return;
+    // 非playing狀態不可操作
+    if (!isPlaying) return;
     // 如果現在不是我的回合，且我不是在選自己的棋子(防止亂點)，則禁止
     // 但為了讓使用者可以點選查看自己的棋子，我們只在「嘗試移動」時攔截
     
@@ -304,7 +306,7 @@ function click(r, c) {
             const newBoardStr = boardToString(chessboardArr);
             
             // 2. 發送給後端
-            sendMoveToServer(newBoardStr, "moveString變數"); // 記得把你原本算好的 moveString 傳進去
+            sendMoveToServer(newBoardStr, moveString); // 記得把你原本算好的 moveString 傳進去
 
             // 3. 本地切換回合 (等待伺服器確認)
             turn = (turn==='w') ? 'b' : 'w';  // 交換回合
@@ -353,6 +355,7 @@ function initSSE() {
         // 更新本地資料
         chessboardArr = stringToBoard(data.board);
         turn = data.turn;
+        isPlaying = data.status === "playing";
         
         // 重新繪製
         selected = null;

@@ -156,7 +156,7 @@ if (!$room) {
 </head>
 
 <body>
-    <input type="hidden" id="room_code" value="<?php echo htmlspecialchars($room['room_code']); ?>">
+    <input type="hidden" id="room_code" value="<?php echo htmlspecialchars($room_code); ?>">
     <a href="index.php" class="back-button">返回主頁</a>
     <div class="setup-container">
         <h2>棋局設置</h2>
@@ -164,9 +164,9 @@ if (!$room) {
         <div class="setting-group">
             <label class="setting-label">選擇先後手</label>
             <div class="btn-group" id="side-group">
-                <button class="btn" data-value="white"><span class="icon-box icon-white"></span>白方</button>
+                <button class="btn" data-value="w"><span class="icon-box icon-white"></span>白方</button>
                 <button class="btn" data-value="random"><span class="icon-box icon-random"></span>隨機</button>
-                <button class="btn" data-value="black"><span class="icon-box icon-black"></span>黑方</button>
+                <button class="btn" data-value="b"><span class="icon-box icon-black"></span>黑方</button>
             </div>
         </div>
 

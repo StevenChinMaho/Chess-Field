@@ -14,7 +14,7 @@ if (!$identity || !$room_code || !$board_str) {
 }
 
 // 1. 驗證身分與房間
-$sql = "SELECT r.*, g.game_id, g.turn, g.status, p.player_id 
+$sql = "SELECT r.*, g.game_id, g.p1_side , g.turn, g.status, p.player_id 
         FROM rooms r 
         JOIN players p ON p.player_identity = :identity
         JOIN games g ON r.game_id = g.game_id
@@ -30,16 +30,15 @@ if (!$data) {
 
 // 2. 判斷玩家顏色
 $my_color = '';
-if ($data['p1_id'] == $data['player_id']) $my_color = 'w';
-else if ($data['p2_id'] == $data['player_id']) $my_color = 'b';
+if ($data['p1_id'] == $data['player_id']) $my_color = $data['p1_side'];
+else if ($data['p2_id'] == $data['player_id']) $my_color = $data['p1_side'] === 'w' ? 'b' : 'w';
 else {
     echo json_encode(['status' => 'error', 'message' => '觀戰者不可移動']);
     exit;
 }
 
 // 3. 檢查是否輪到該玩家
-// 資料庫 turn 初始可能是 NULL (剛開始)，如果是 NULL 則預設 'w'
-$current_turn = $data['turn'] ?? 'w';
+$current_turn = $data['turn'];
 
 if ($current_turn !== $my_color) {
     echo json_encode(['status' => 'error', 'message' => '不是你的回合']);
