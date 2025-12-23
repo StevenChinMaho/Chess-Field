@@ -10,6 +10,7 @@ CREATE table `games` (
     `chessboard` CHAR(64) DEFAULT 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR' COMMENT '棋盤狀態',
     `status` ENUM('deciding', 'waiting', 'playing', 'finished') DEFAULT 'deciding' COMMENT '遊戲狀態',
     `turn` CHAR(1) COMMENT '黑/白回合', 
+    `p1_side` CHAR(1) COMMENT '玩家一的陣營',
     `p1_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家一剩餘時間',
     `p2_time` INT DEFAULT 5400 NOT NULL COMMENT '玩家二剩餘時間',
     `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '上次落子時間',
