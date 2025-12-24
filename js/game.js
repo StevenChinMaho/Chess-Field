@@ -25,6 +25,38 @@ if (GAME_CONFIG.initialEnPassant) {
     enPassantTarget = null;
 }
 
+// 初始化 castling_rights -> 轉成 hasMoved（避免 reload 後遺失王車易位狀態）
+function applyCastlingRights(castling) {
+    // initial squares
+    const wk = {r:7, c:4}, wrA = {r:7, c:0}, wrH = {r:7, c:7};
+    const bk = {r:0, c:4}, brA = {r:0, c:0}, brH = {r:0, c:7};
+
+    const setMoved = (sq, v) => {
+        const key = `${sq.r},${sq.c}`;
+        if (v) hasMoved[key] = true; else delete hasMoved[key];
+    };
+
+    if (!castling) {
+        // 沒有任何權利，全部標記為已動過
+        setMoved(wk, true); setMoved(wrA, true); setMoved(wrH, true);
+        setMoved(bk, true); setMoved(brA, true); setMoved(brH, true);
+        return;
+    }
+
+    // White rooks
+    if (castling.indexOf('K') !== -1) setMoved(wrH, false); else setMoved(wrH, true);
+    if (castling.indexOf('Q') !== -1) setMoved(wrA, false); else setMoved(wrA, true);
+    // If both K and Q missing => king moved at some point
+    if (castling.indexOf('K') === -1 && castling.indexOf('Q') === -1) setMoved(wk, true); else setMoved(wk, false);
+
+    // Black rooks
+    if (castling.indexOf('k') !== -1) setMoved(brH, false); else setMoved(brH, true);
+    if (castling.indexOf('q') !== -1) setMoved(brA, false); else setMoved(brA, true);
+    if (castling.indexOf('k') === -1 && castling.indexOf('q') === -1) setMoved(bk, true); else setMoved(bk, false);
+}
+
+applyCastlingRights(GAME_CONFIG.initialCastling);
+
 
 const symbols = {
     'k': '♚\uFE0E', 'q': '♛\uFE0E', 'r': '♜\uFE0E', 'b': '♝\uFE0E', 'n': '♞\uFE0E', 'p': '♟\uFE0E',
@@ -373,6 +405,11 @@ function initSSE() {
             enPassantTarget = { r: 8 - rank, c: file };
         } else {
             enPassantTarget = null;
+        }
+
+        // 同步 castling 權利（轉成 hasMoved）
+        if (typeof data.castling !== 'undefined') {
+            applyCastlingRights(data.castling);
         }
         
         // 重新繪製

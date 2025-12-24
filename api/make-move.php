@@ -56,6 +56,7 @@ try {
 
     // 判斷是否有兩格兵移動，並計算 en passant 目標(e.g. 'e3')
     $en_passant = null;
+    $new_castling = null;
     if ($old_board) {
         $old = str_split($old_board);
         $new = str_split($board_str);
@@ -82,17 +83,56 @@ try {
                 $en_passant = $file . $rank;
             }
         }
+
+        // 取得目前 castling rights
+        $stmt = $pdo->prepare("SELECT castling_rights FROM games WHERE game_id = ?");
+        $stmt->execute([$data['game_id']]);
+        $old_castling = $stmt->fetchColumn() ?? '';
+        $new_castling = $old_castling;
+
+        // 原始位置索引
+        $wk_idx = 7*8 + 4; // white king e1
+        $wr_a_idx = 7*8 + 0; // white rook a1
+        $wr_h_idx = 7*8 + 7; // white rook h1
+        $bk_idx = 0*8 + 4; // black king e8
+        $br_a_idx = 0*8 + 0; // black rook a8
+        $br_h_idx = 0*8 + 7; // black rook h8
+
+        // 如果原位的 King/Rook 消失或移動，清除對應的 castling 權利
+        if (isset($old[$wk_idx]) && $old[$wk_idx] === 'K' && (!isset($new[$wk_idx]) || $new[$wk_idx] !== 'K')) {
+            $new_castling = str_replace(['K','Q'], '', $new_castling);
+        }
+        if (isset($old[$wr_h_idx]) && $old[$wr_h_idx] === 'R' && (!isset($new[$wr_h_idx]) || $new[$wr_h_idx] !== 'R')) {
+            $new_castling = str_replace('K', '', $new_castling);
+        }
+        if (isset($old[$wr_a_idx]) && $old[$wr_a_idx] === 'R' && (!isset($new[$wr_a_idx]) || $new[$wr_a_idx] !== 'R')) {
+            $new_castling = str_replace('Q', '', $new_castling);
+        }
+
+        if (isset($old[$bk_idx]) && $old[$bk_idx] === 'k' && (!isset($new[$bk_idx]) || $new[$bk_idx] !== 'k')) {
+            $new_castling = str_replace(['k','q'], '', $new_castling);
+        }
+        if (isset($old[$br_h_idx]) && $old[$br_h_idx] === 'r' && (!isset($new[$br_h_idx]) || $new[$br_h_idx] !== 'r')) {
+            $new_castling = str_replace('k', '', $new_castling);
+        }
+        if (isset($old[$br_a_idx]) && $old[$br_a_idx] === 'r' && (!isset($new[$br_a_idx]) || $new[$br_a_idx] !== 'r')) {
+            $new_castling = str_replace('q', '', $new_castling);
+        }
+
+        // 如果最後變成空字串，設定為 NULL
+        // if ($new_castling === '') $new_castling = null;
     }
 
     // 下一回合顏色
     $next_turn = ($current_turn === 'w') ? 'b' : 'w';
 
-    // 更新 Games 表 (棋盤狀態、回合、最後更新時間、en_passant_target)
-    $stmt = $pdo->prepare("UPDATE games SET chessboard = :board, turn = :next, status = 'playing', last_update = NOW(), en_passant_target = :enpass WHERE game_id = :gid");
+    // 更新 Games 表 (棋盤狀態、回合、最後更新時間、en_passant_target, castling_rights)
+    $stmt = $pdo->prepare("UPDATE games SET chessboard = :board, turn = :next, status = 'playing', last_update = NOW(), en_passant_target = :enpass, castling_rights = :castling WHERE game_id = :gid");
     $stmt->execute([
         'board' => $board_str,
         'next' => $next_turn,
         'enpass' => $en_passant,
+        'castling' => $new_castling,
         'gid' => $data['game_id']
     ]);
 
@@ -109,6 +149,7 @@ try {
 
 } catch (Exception $e) {
     $pdo->rollBack();
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => "發生錯誤"]);
 }
 ?>

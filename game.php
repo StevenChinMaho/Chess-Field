@@ -66,13 +66,14 @@ if ($info) {
 }
 
 // 3. 取得初始棋盤 (如果剛進來是 reload，需要恢復盤面)
-$sql_game = "SELECT g.chessboard, g.turn FROM rooms r JOIN games g ON r.game_id = g.game_id WHERE r.room_code = ?";
+$sql_game = "SELECT g.chessboard, g.turn, g.en_passant_target, g.castling_rights FROM rooms r JOIN games g ON r.game_id = g.game_id WHERE r.room_code = ?";
 $stmt_g = $pdo->prepare($sql_game);
 $stmt_g->execute([$room_code]);
 $game_data = $stmt_g->fetch();
 $initial_board = $game_data['chessboard'] ?? 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR';
 $initial_turn = $game_data['turn'] ?? 'w';
 $initial_en_passant = $game_data['en_passant_target'] ?? null;
+$initial_castling = $game_data['castling_rights'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -88,7 +89,8 @@ $initial_en_passant = $game_data['en_passant_target'] ?? null;
             mySide: "<?php echo $my_side; ?>", // 'w', 'b', or 'spectator'
             initialBoard: "<?php echo $initial_board; ?>",
             initialTurn: "<?php echo $initial_turn; ?>",
-            initialEnPassant: "<?php echo $initial_en_passant; ?>"
+            initialEnPassant: "<?php echo $initial_en_passant; ?>",
+            initialCastling: "<?php echo $initial_castling; ?>"
         };
     </script>
     <script src="js/room-heartbeat.js?v=<?php echo $asset_versions["room-heartbeat.js"]; ?>" defer></script>
