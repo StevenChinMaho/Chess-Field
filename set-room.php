@@ -62,7 +62,7 @@ if (!$room) {
     $now = new DateTime();
 
     //如果房間已過期就重置
-    if ($now->getTimestamp() - $last_conn->getTimestamp() > 180) {
+    if ($now->getTimestamp() - $last_conn->getTimestamp() > EXPIRATION_TIME_SECONDS) {
         $stmt = $pdo->prepare("INSERT INTO `games` (`status`) VALUE ('deciding');");
         $stmt->execute();
         $new_game_id = $pdo->lastInsertId();

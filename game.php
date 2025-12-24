@@ -10,9 +10,9 @@ $identity = $_COOKIE['identity'] ?? null;
 $sql = "SELECT r.p1_id, r.p2_id, p.player_id 
         FROM rooms r 
         JOIN players p ON p.player_identity = :idn 
-        WHERE r.room_code = :code";
+        WHERE r.room_code = :code AND TIMESTAMPDIFF(SECOND, r.last_conn, NOW()) <= :exp";
 $stmt = $pdo->prepare($sql);
-$stmt->execute(['idn' => $identity, 'code' => $room_code]);
+$stmt->execute(['idn' => $identity, 'code' => $room_code, 'exp' => EXPIRATION_TIME_SECONDS]);
 $info = $stmt->fetch();
 
 $my_side = 'spectator';
@@ -62,6 +62,7 @@ if ($info) {
 } else {
     // 輸入不合法，導回主畫面
     header("Location: index.php?error=invaild_input");
+    exit();
 }
 
 // 3. 取得初始棋盤 (如果剛進來是 reload，需要恢復盤面)
