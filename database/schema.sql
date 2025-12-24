@@ -27,7 +27,7 @@ CREATE TABLE `games` (
   `p1_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家一剩餘時間',
   `p2_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家二剩餘時間',
   `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '上次落子時間',
-  `castling_rights` char(6) NOT NULL DEFAULT 'rkrRKR' COMMENT '王車易位規則',
+  `castling_rights` char(4) NOT NULL DEFAULT 'KQkq' COMMENT '王車易位規則',
   `en_passant_target` varchar(2) DEFAULT NULL COMMENT '吃過路兵規則'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='棋局資料表';
 
