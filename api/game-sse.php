@@ -23,6 +23,8 @@ if (!$game_id) {
 }
 
 $last_timestamp = 0;
+if (isset($_SERVER['HTTP_LAST_EVENT_ID']))
+    $last_timestamp = intval($_SERVER['HTTP_LAST_EVENT_ID']);
 
 // 設定超時防止 PHP process 永遠卡著 (例如 30秒重連一次)
 $start_time = time();
@@ -49,6 +51,7 @@ while (true) {
                 'status' => $game['status']
             ];
 
+            echo "id: " . $db_ts . "\n";
             echo "event: update\n";
             echo "data: " . json_encode($payload) . "\n\n";
             
@@ -58,6 +61,6 @@ while (true) {
     }
 
     // 每 0.5 秒檢查一次
-    usleep(500000);
+    usleep(100000);
 }
 ?>
