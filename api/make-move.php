@@ -49,15 +49,50 @@ if ($current_turn !== $my_color) {
 try {
     $pdo->beginTransaction();
 
+    // 取得目前資料庫的棋盤（用來判斷是否為兩格兵）
+    $stmt = $pdo->prepare("SELECT chessboard FROM games WHERE game_id = ?");
+    $stmt->execute([$data['game_id']]);
+    $old_board = $stmt->fetchColumn();
+
+    // 判斷是否有兩格兵移動，並計算 en passant 目標(e.g. 'e3')
+    $en_passant = null;
+    if ($old_board) {
+        $old = str_split($old_board);
+        $new = str_split($board_str);
+        $from = null; $to = null;
+        for ($i = 0; $i < 64; $i++) {
+            if ($old[$i] !== $new[$i]) {
+                if ($old[$i] !== '.' && $new[$i] === '.' && strtolower($old[$i]) === 'p') {
+                    $from = $i;
+                }
+                if ($new[$i] !== '.' && $old[$i] === '.' && strtolower($new[$i]) === 'p') {
+                    $to = $i;
+                }
+            }
+        }
+        if ($from !== null && $to !== null) {
+            $from_r = intdiv($from, 8);
+            $to_r = intdiv($to, 8);
+            $from_c = $from % 8;
+            $to_c = $to % 8;
+            if (abs($from_r - $to_r) === 2 && $from_c === $to_c) {
+                $mid_r = ($from_r + $to_r) / 2;
+                $file = chr(97 + $to_c);
+                $rank = 8 - $mid_r;
+                $en_passant = $file . $rank;
+            }
+        }
+    }
+
     // 下一回合顏色
     $next_turn = ($current_turn === 'w') ? 'b' : 'w';
 
-    // 更新 Games 表 (棋盤狀態、回合、最後更新時間)
-    // 注意：如果是剛開始 playing，這裡也會把 status 確保為 playing
-    $stmt = $pdo->prepare("UPDATE games SET chessboard = :board, turn = :next, status = 'playing', last_update = NOW() WHERE game_id = :gid");
+    // 更新 Games 表 (棋盤狀態、回合、最後更新時間、en_passant_target)
+    $stmt = $pdo->prepare("UPDATE games SET chessboard = :board, turn = :next, status = 'playing', last_update = NOW(), en_passant_target = :enpass WHERE game_id = :gid");
     $stmt->execute([
         'board' => $board_str,
         'next' => $next_turn,
+        'enpass' => $en_passant,
         'gid' => $data['game_id']
     ]);
 

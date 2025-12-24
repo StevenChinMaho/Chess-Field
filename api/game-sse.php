@@ -34,7 +34,7 @@ while (true) {
 
     // 檢查是否有更新
     // 我們檢查 last_update 的 timestamp
-    $stmt = $pdo->prepare("SELECT chessboard, turn, status, UNIX_TIMESTAMP(last_update) as ts FROM games WHERE game_id = ?");
+    $stmt = $pdo->prepare("SELECT chessboard, turn, status, en_passant_target, UNIX_TIMESTAMP(last_update) as ts FROM games WHERE game_id = ?");
     $stmt->execute([$game_id]);
     $game = $stmt->fetch();
 
@@ -48,7 +48,8 @@ while (true) {
             $payload = [
                 'board' => $game['chessboard'], // 64字元字串
                 'turn' => $game['turn'] ?? 'w', // w 或 b
-                'status' => $game['status']
+                'status' => $game['status'],
+                'en_passant' => $game['en_passant_target']
             ];
 
             echo "id: " . $db_ts . "\n";

@@ -72,6 +72,7 @@ $stmt_g->execute([$room_code]);
 $game_data = $stmt_g->fetch();
 $initial_board = $game_data['chessboard'] ?? 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR';
 $initial_turn = $game_data['turn'] ?? 'w';
+$initial_en_passant = $game_data['en_passant_target'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -86,7 +87,8 @@ $initial_turn = $game_data['turn'] ?? 'w';
             roomCode: "<?php echo htmlspecialchars($room_code); ?>",
             mySide: "<?php echo $my_side; ?>", // 'w', 'b', or 'spectator'
             initialBoard: "<?php echo $initial_board; ?>",
-            initialTurn: "<?php echo $initial_turn; ?>"
+            initialTurn: "<?php echo $initial_turn; ?>",
+            initialEnPassant: "<?php echo $initial_en_passant; ?>"
         };
     </script>
     <script src="js/room-heartbeat.js?v=<?php echo $asset_versions["room-heartbeat.js"]; ?>" defer></script>

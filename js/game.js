@@ -16,6 +16,15 @@ let hints = [];  // 棋子可以合法移動到哪裡
 let hasMoved = {};  // 棋子是否移動過
 let enPassantTarget = null;  // 過路兵的攻擊點
 
+// 初始化 en-passant（若後端有傳來）
+if (GAME_CONFIG.initialEnPassant) {
+    const file = GAME_CONFIG.initialEnPassant.charCodeAt(0) - 97;
+    const rank = parseInt(GAME_CONFIG.initialEnPassant[1], 10);
+    enPassantTarget = { r: 8 - rank, c: file };
+} else {
+    enPassantTarget = null;
+}
+
 
 const symbols = {
     'k': '♚\uFE0E', 'q': '♛\uFE0E', 'r': '♜\uFE0E', 'b': '♝\uFE0E', 'n': '♞\uFE0E', 'p': '♟\uFE0E',
@@ -356,6 +365,15 @@ function initSSE() {
         chessboardArr = stringToBoard(data.board);
         turn = data.turn;
         isPlaying = data.status === "playing";
+
+        // 同步 en-passant 目標（若有）
+        if (data.en_passant) {
+            const file = data.en_passant.charCodeAt(0) - 97;
+            const rank = parseInt(data.en_passant[1], 10);
+            enPassantTarget = { r: 8 - rank, c: file };
+        } else {
+            enPassantTarget = null;
+        }
         
         // 重新繪製
         selected = null;
