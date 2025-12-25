@@ -1,11 +1,15 @@
 <?php 
+// 資料庫基本設定
 define('DB_HOST', 'localhost');
 define('DB_USER', 'user');
 define('DB_PASS', 'password');
 define('DB_NAME', 'chess_db');
 
+// 其他常數與設定值
+define('EXPIRATION_TIME_SECONDS', 180);
 date_default_timezone_set('Asia/Taipei');
 
+// 建立PDO物件連線資料庫
 try {
     $pdo = new PDO(
         "mysql:host=" . DB_HOST . "; dbname=" . DB_NAME . ";charset=utf8mb4", 

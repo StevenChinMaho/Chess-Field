@@ -1,4 +1,4 @@
-const roomCodeInput = document.getElementById("room-code");
+const roomCodeInput = document.getElementById("room_code");
 const postData = {
     room_code: roomCodeInput.value
 };

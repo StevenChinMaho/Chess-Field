@@ -91,14 +91,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function startGame() {
     console.log("最終設定:", currentSettings);
     
-    // alert(`房間建立成功！\n` + 
-    //       `-----------------\n` +
-    //       `陣營: ${c.side}\n` +
-    //       `時間: ${currentSettings.timeMinutes} 分 + ${currentSettings.increment} 秒\n` +
-    //       `輔助: ${currentSettings.assist ? '開啟' : '關閉'}`);
-    const roomCode = document.getElementById("room-code").value;
+    const roomCode = document.getElementById("room_code").value;
     const urlObj = new URL("game.php", window.location.href);
-    urlObj.searchParams.set("room-code", roomCode);
+    urlObj.searchParams.set("room_code", roomCode);
+
+    alert(`房間${roomCode}建立成功！\n` + 
+          `-----------------\n` +
+          `陣營: ${currentSettings.side}\n` +
+          `時間: ${currentSettings.timeMinutes} 分 + ${currentSettings.increment} 秒\n` +
+          `輔助: ${currentSettings.assist ? '開啟' : '關閉'}`);
 
     const form = document.createElement("form");
     form.method = "POST";

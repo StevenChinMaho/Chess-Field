@@ -1,6 +1,6 @@
 const startGameBtn = document.getElementById('start-game-btn');
 const playerName = document.getElementById('player-name');
-const roomCode = document.getElementById('room-code');
+const roomCode = document.getElementById('room_code');
 
 function inputVerify () {
     if (playerName.value.trim().length > 0 && roomCode.value.trim().length > 0) {
