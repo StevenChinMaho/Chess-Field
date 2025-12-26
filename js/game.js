@@ -8,13 +8,15 @@ const mySide = GAME_CONFIG.mySide;
 
 // 與結束遊戲相關的變數
 let moveCount = GAME_CONFIG.initialMoveCount;
-let isPlaying = GAME_CONFIG.gameStatus === 'playing';
+let isFinished = (GAME_CONFIG.gameStatus === 'finished');
+// let isPlaying = GAME_CONFIG.gameStatus === 'playing';
 const actionBtn = document.getElementById('btn-action');
 const modal = document.getElementById('game-modal');
 const modalMsg = document.getElementById('modal-msg');
 
 // 初始化棋盤
 let chessboardArr = stringToBoard(GAME_CONFIG.initialBoard);
+let isPlaying = false;
 let turn = GAME_CONFIG.initialTurn;  // 輪到誰
 let selected = null;  // 被選取的棋子
 let hints = [];  // 棋子可以合法移動到哪裡
@@ -63,10 +65,11 @@ function applyCastlingRights(castling) {
 applyCastlingRights(GAME_CONFIG.initialCastling);
 
 function updateActionButton() {
-    if (mySide === 'spectator' || !isPlaying) {
+    if (mySide === 'spectator' || isFinished) {
         actionBtn.style.display = 'none';
         return;
     }
+    actionBtn.style.display = 'block';
     if (moveCount < 2) {
         actionBtn.innerText = "終止遊戲";
         actionBtn.style.backgroundColor = "#d9534f";
@@ -442,10 +445,11 @@ function initSSE() {
         // 更新本地資料
         chessboardArr = stringToBoard(data.board);
         turn = data.turn;
-        if (data.status === "finished") {
+        isPlaying = data.status === "playing";
+        isFinished = (data.status === "finished");
+
+        if (isFinished) {
             showGameOverModal(data.outcome);
-        } else {
-            isPlaying = data.status === "playing";
         }
         
         if (data.move_count !== undefined) moveCount = data.move_count;
@@ -478,7 +482,7 @@ function initSSE() {
 // 啟動
 initSSE();
 updateActionButton();
-if (GAME_CONFIG.gameStatus === 'finished') {
+if (isFinished) {
     showGameOverModal(GAME_CONFIG.outcome);
 } else {
     modal.classList.remove('show');
