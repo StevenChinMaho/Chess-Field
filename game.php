@@ -66,7 +66,7 @@ if ($info) {
 }
 
 // 3. 取得初始棋盤 (如果剛進來是 reload，需要恢復盤面)
-$sql_game = "SELECT g.chessboard, g.turn, g.en_passant_target, g.castling_rights FROM rooms r JOIN games g ON r.game_id = g.game_id WHERE r.room_code = ?";
+$sql_game = "SELECT g.game_id, g.chessboard, g.turn, g.status, g.outcome, g.en_passant_target, g.castling_rights FROM rooms r JOIN games g ON r.game_id = g.game_id WHERE r.room_code = ?";
 $stmt_g = $pdo->prepare($sql_game);
 $stmt_g->execute([$room_code]);
 $game_data = $stmt_g->fetch();
@@ -74,6 +74,12 @@ $initial_board = $game_data['chessboard'] ?? 'rnbqkbnrpppppppp..................
 $initial_turn = $game_data['turn'] ?? 'w';
 $initial_en_passant = $game_data['en_passant_target'] ?? null;
 $initial_castling = $game_data['castling_rights'] ?? null;
+$current_status = $game_data['status'] ?? 'deciding';
+$current_outcome = $game_data['outcome'] ?? null;
+
+$stmt_m = $pdo->prepare("SELECT COUNT(*) FROM moves WHERE game_id = ?");
+$stmt_m->execute([$game_data['game_id']]);
+$current_move_count = $stmt_m->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -81,7 +87,7 @@ $initial_castling = $game_data['castling_rights'] ?? null;
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game - Chess Field</title>
-    <link rel="stylesheet" href="css/game-style.css">
+    <link rel="stylesheet" href="css/game-style.css?v=<?php echo $asset_versions["game-style.css"]; ?>">
     <script>
         // 將 PHP 變數傳給 JS
         const GAME_CONFIG = {
@@ -90,7 +96,10 @@ $initial_castling = $game_data['castling_rights'] ?? null;
             initialBoard: "<?php echo $initial_board; ?>",
             initialTurn: "<?php echo $initial_turn; ?>",
             initialEnPassant: "<?php echo $initial_en_passant; ?>",
-            initialCastling: "<?php echo $initial_castling; ?>"
+            initialCastling: "<?php echo $initial_castling; ?>",
+            initialMoveCount: <?php echo (int)$current_move_count; ?>,
+            gameStatus: "<?php echo $current_status; ?>",
+            outcome: "<?php echo $current_outcome; ?>"
         };
     </script>
     <script src="js/room-heartbeat.js?v=<?php echo $asset_versions["room-heartbeat.js"]; ?>" defer></script>
@@ -111,9 +120,17 @@ $initial_castling = $game_data['castling_rights'] ?? null;
         <div class="side-bar">
             <div class="moves" id="logs"></div>
             <div class="ctrls">
-                <div id="status" class="status">White's Turn</div>
-                <button id="btn-reset" class="btn-gray">Restart</button>
+                <div id="status" class="status">載入中...</div>
+                <button id="btn-action" class="btn" style="background-color: #d9534f;">終止遊戲</button>
             </div>
+        </div>
+    </div>
+
+    <div id="game-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">對局結束</h2>
+            <p id="modal-msg"></p>
+            <button onclick="location.href='index.php'" class="modal-btn">返回首頁</button>
         </div>
     </div>
 

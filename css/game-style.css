@@ -152,3 +152,73 @@ body {
 .btn:hover {
     background: lightgray;
 }
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    backdrop-filter: blur(5px);
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--panel);
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    border: 5px solid var(--bg);
+    max-width: 400px;
+    width: 90%;
+    margin: auto;
+}
+
+.modal-content h2 {
+    color: #3a3a3a;
+    margin-top: 0;
+    font-size: 1.8rem;
+}
+
+.modal-content p {
+    color: #3a3a3a;
+    font-size: 1.2rem;
+    margin: 20px 0;
+}
+
+.modal-btn {
+    background: var(--dark);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.modal-btn:hover {
+    background: #5d7a42;
+    transform: scale(1.05);
+}
+
+#btn-action:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    transition: all 0.2s;
+}
+
+#btn-action:active {
+    transform: translateY(0);
+}

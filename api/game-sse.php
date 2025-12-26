@@ -34,7 +34,7 @@ while (true) {
 
     // 檢查是否有更新
     // 我們檢查 last_update 的 timestamp
-    $stmt = $pdo->prepare("SELECT chessboard, turn, status, en_passant_target, castling_rights, UNIX_TIMESTAMP(last_update) as ts FROM games WHERE game_id = ?");
+    $stmt = $pdo->prepare("SELECT chessboard, turn, status, outcome, en_passant_target, castling_rights, UNIX_TIMESTAMP(last_update) as ts FROM games WHERE game_id = ?");
     $stmt->execute([$game_id]);
     $game = $stmt->fetch();
 
@@ -44,11 +44,17 @@ while (true) {
         // 如果資料庫的時間比我們上次知道的時間新，就發送數據
         if ($db_ts > $last_timestamp) {
             $last_timestamp = $db_ts;
+
+            $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM moves WHERE game_id = ?");
+            $stmt_count->execute([$game_id]);
+            $move_count = $stmt_count->fetchColumn();
             
             $payload = [
                 'board' => $game['chessboard'], // 64字元字串
                 'turn' => $game['turn'] ?? 'w', // w 或 b
                 'status' => $game['status'],
+                'outcome' => $game['outcome'],
+                'move_count' => (int)$move_count,
                 'en_passant' => $game['en_passant_target'],
                 'castling' => $game['castling_rights']
             ];

@@ -1,5 +1,6 @@
 <?php 
 $asset_versions = [
+    "game-style.css" => filemtime("css/game-style.css"),
     "index-style.css" => filemtime("css/index-style.css"),
     "set-room-style.css" => filemtime("css/set-room-style.css"),
     "game.js" => filemtime("js/game.js"),

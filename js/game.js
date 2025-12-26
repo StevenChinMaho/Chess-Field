@@ -6,10 +6,15 @@ const logsElement = document.getElementById('logs');  // 負責棋譜紀錄
 const roomCode = GAME_CONFIG.roomCode;
 const mySide = GAME_CONFIG.mySide;
 
+// 與結束遊戲相關的變數
+let moveCount = GAME_CONFIG.initialMoveCount;
+let isPlaying = GAME_CONFIG.gameStatus === 'playing';
+const actionBtn = document.getElementById('btn-action');
+const modal = document.getElementById('game-modal');
+const modalMsg = document.getElementById('modal-msg');
+
 // 初始化棋盤
 let chessboardArr = stringToBoard(GAME_CONFIG.initialBoard);
-
-let isPlaying = false;
 let turn = GAME_CONFIG.initialTurn;  // 輪到誰
 let selected = null;  // 被選取的棋子
 let hints = [];  // 棋子可以合法移動到哪裡
@@ -56,6 +61,45 @@ function applyCastlingRights(castling) {
 }
 
 applyCastlingRights(GAME_CONFIG.initialCastling);
+
+function updateActionButton() {
+    if (mySide === 'spectator' || !isPlaying) {
+        actionBtn.style.display = 'none';
+        return;
+    }
+    if (moveCount < 2) {
+        actionBtn.innerText = "終止遊戲";
+        actionBtn.style.backgroundColor = "#d9534f";
+    } else {
+        actionBtn.innerText = "投降";
+        actionBtn.style.backgroundColor = "#f0ad4e";
+    }
+}
+
+function showGameOverModal(outcome) {
+    isPlaying = false;
+    let msg = "";
+    if (outcome === 'aborted') {
+        msg = "遊戲已被終止";
+    } else if (outcome === 'w') {
+        msg = "遊戲結束，白方獲勝！";
+    } else if (outcome === 'b') {
+        msg = "遊戲結束，黑方獲勝！";
+    } else {
+        msg = "對局結束";
+    }
+    modalMsg.innerText = msg;
+    modal.classList.add('show');
+    updateActionButton();
+}
+
+actionBtn.onclick = async () => {
+    const text = (moveCount < 2) ? "終止" : "投降";
+    if (!confirm(`確定要${text}遊戲嗎？`)) return;
+    const fd = new FormData();
+    fd.append('room_code', roomCode);
+    await fetch('api/end-game.php', { method: 'POST', body: fd });
+};
 
 
 const symbols = {
@@ -351,6 +395,8 @@ function click(r, c) {
 
             // 3. 本地切換回合 (等待伺服器確認)
             turn = (turn==='w') ? 'b' : 'w';  // 交換回合
+            moveCount++;
+            updateActionButton();
             selected = null;
             hints = [];
             render();
@@ -396,7 +442,13 @@ function initSSE() {
         // 更新本地資料
         chessboardArr = stringToBoard(data.board);
         turn = data.turn;
-        isPlaying = data.status === "playing";
+        if (data.status === "finished") {
+            showGameOverModal(data.outcome);
+        } else {
+            isPlaying = data.status === "playing";
+        }
+        
+        if (data.move_count !== undefined) moveCount = data.move_count;
 
         // 同步 en-passant 目標（若有）
         if (data.en_passant) {
@@ -423,7 +475,12 @@ function initSSE() {
     };
 }
 
-document.getElementById('btn-reset').onclick = () => location.reload();  // Restart按鈕
 // 啟動
 initSSE();
+updateActionButton();
+if (GAME_CONFIG.gameStatus === 'finished') {
+    showGameOverModal(GAME_CONFIG.outcome);
+} else {
+    modal.classList.remove('show');
+}
 render();  // game.php執行後，先把棋盤棋子畫出來
