@@ -21,14 +21,15 @@ SET time_zone = "+00:00";
 CREATE TABLE `games` (
   `game_id` int(11) NOT NULL,
   `chessboard` char(64) DEFAULT 'rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR' COMMENT '棋盤狀態',
-  `status` enum('deciding', 'waiting', 'playing', 'finished') DEFAULT 'deciding' COMMENT '遊戲狀態',
-  `turn` char(1) DEFAULT 'w' NOT NULL COMMENT '黑/白回合',
-  `p1_side` CHAR(1) COMMENT '玩家一的陣營',
+  `status` enum('deciding','waiting','playing','finished') DEFAULT 'deciding' COMMENT '遊戲狀態',
+  `turn` char(1) NOT NULL DEFAULT 'w' COMMENT '黑/白回合',
+  `p1_side` char(1) DEFAULT NULL COMMENT '玩家一的陣營',
   `p1_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家一剩餘時間',
   `p2_time` int(11) NOT NULL DEFAULT 5400 COMMENT '玩家二剩餘時間',
   `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '上次落子時間',
   `castling_rights` char(4) NOT NULL DEFAULT 'KQkq' COMMENT '王車易位規則',
-  `en_passant_target` varchar(2) DEFAULT NULL COMMENT '吃過路兵規則'
+  `en_passant_target` varchar(2) DEFAULT NULL COMMENT '吃過路兵規則',
+  `outcome` varchar(20) DEFAULT NULL COMMENT '比賽結果: w, b, draw, aborted'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='棋局資料表';
 
 -- --------------------------------------------------------
