@@ -119,9 +119,6 @@ try {
         if (isset($old[$br_a_idx]) && $old[$br_a_idx] === 'r' && (!isset($new[$br_a_idx]) || $new[$br_a_idx] !== 'r')) {
             $new_castling = str_replace('q', '', $new_castling);
         }
-
-        // 如果最後變成空字串，設定為 NULL
-        // if ($new_castling === '') $new_castling = null;
     }
 
     // 取得本次移動所花費時間
