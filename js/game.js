@@ -532,21 +532,42 @@ function updateClock(w_time, b_time) {
     if (timerInterval) clearTimeout(timerInterval);
 
     function tick() {
+        if (isFinished) return;
         // 顯示目前時間
         if (mySide === 'b') {
             topTime.innerText = formatTime(w_time);
             bottomTime.innerText = formatTime(b_time);
+
+            if (w_time <= 10) topTime.classList.add('blink');
+            else topTime.classList.remove('blink');
+            if (b_time <= 10) bottomTime.classList.add('blink');
+            else bottomTime.classList.remove('blink');
         } else {
             topTime.innerText = formatTime(b_time);
             bottomTime.innerText = formatTime(w_time);
+
+            if (w_time <= 10) bottomTime.classList.add('blink');
+            else bottomTime.classList.remove('blink');
+            if (b_time <= 10) topTime.classList.add('blink');
+            else topTime.classList.remove('blink');
         }
         
 
         if (isPlaying) {
-            if (turn === 'w' && w_time > 0) {
-                w_time--;
-            } else if (turn === 'b' && b_time > 0) {
-                b_time--;
+            if (turn === 'w') {
+                if (w_time > 0) {
+                    w_time--;
+                } else {
+                    handleTimeout('w');
+                    return;
+                }
+            } else if (turn === 'b') {
+                if (b_time > 0) {
+                    b_time--;
+                } else {
+                    handleTimeout('b');
+                    return;
+                }
             }
         }
 
@@ -559,6 +580,29 @@ function updateClock(w_time, b_time) {
     }
 
     tick(); // 啟動第一次
+}
+
+async function handleTimeout(loserColor) {
+    
+    if (isFinished || mySide === 'spectator') return;
+
+    isFinished = true;
+    isPlaying = false;
+
+    const outcome = (loserColor === 'w') ? 'b' : 'w';
+
+    const fd = new FormData();
+    fd.append('room_code', roomCode);
+    fd.append('outcome', outcome);
+
+    try {
+        await fetch('api/end-game.php', { method: 'POST', body: fd });
+        console.log(`時間到！${loserColor === 'w' ? '白方' : '黑方'}超時。`);
+    } catch (e) {
+        console.error("逾時請求發送失敗:", e);
+    }
+
+    showGameOverModal(outcome);
 }
 
 

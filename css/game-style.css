@@ -59,6 +59,19 @@ body {
     border-radius: 0 0 22px 22px;
 }
 
+/* 計時器閃爍 */
+.blink {
+  color: red;
+  animation: blinkColor 1s infinite;
+}
+
+@keyframes blinkColor {
+  0%   { color: red; }
+  50%  { color: transparent; }
+  100% { color: red; }
+}
+
+
 .board {
     display: grid;
     grid-template-columns: repeat(8, 1fr); /* 切成 8 行，每行寬度相等 (1fr) */
