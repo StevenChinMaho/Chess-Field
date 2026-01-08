@@ -10,8 +10,7 @@ const mySide = GAME_CONFIG.mySide;
 
 // 與結束遊戲相關的變數
 let moveCount = GAME_CONFIG.initialMoveCount;
-let isFinished = (GAME_CONFIG.gameStatus === 'finished');
-// let isPlaying = GAME_CONFIG.gameStatus === 'playing';
+let isFinished = GAME_CONFIG.gameStatus === 'finished';
 const actionBtn = document.getElementById('btn-action');
 const modal = document.getElementById('game-modal');
 const modalMsg = document.getElementById('modal-msg');
@@ -285,7 +284,7 @@ function render() {
     
     // 狀態顯示優化
     let statusText = (turn === 'w' ? "白方回合" : "黑方回合");
-    if (turn === mySide) statusText += " (輪到你了)";
+    if (turn === mySide && isPlaying) statusText += " (輪到你了)";
     stateElement.innerText = statusText;
 }
 
@@ -414,6 +413,39 @@ function click(r, c) {
     }
 }
 
+let dotsInterval; // 動畫計時器
+
+function displayPlayersName(w_name, b_name) {
+    // 清掉舊的動畫
+    if (dotsInterval) clearInterval(dotsInterval);
+
+    function setName(element, name) {
+        if (name === null) {
+            let baseText = "正在等待玩家";
+            let dots = "";
+            element.innerText = baseText + "..."; // 初始顯示
+
+            let count = 0;
+            dotsInterval = setInterval(() => {
+                count = (count + 1) % 4; // 0,1,2,3 循環
+                dots = ".".repeat(count);
+                element.innerText = baseText + dots;
+            }, 500); // 每 0.5 秒更新一次
+        } else {
+            element.innerText = name;
+        }
+    }
+
+    if (mySide === 'b') {
+        setName(topName, w_name);
+        setName(bottomName, b_name);
+    } else {
+        setName(topName, b_name);
+        setName(bottomName, w_name);
+    }
+}
+
+
 // === AJAX 發送移動 ===
 async function sendMoveToServer(boardStr, moveText) {
     const formData = new FormData();
@@ -448,7 +480,7 @@ function initSSE() {
         chessboardArr = stringToBoard(data.board);
         turn = data.turn;
         isPlaying = data.status === "playing";
-        isFinished = (data.status === "finished");
+        isFinished = data.status === "finished";
 
         if (isFinished) {
             showGameOverModal(data.outcome);
@@ -471,13 +503,7 @@ function initSSE() {
         }
         
         // 更新玩家名稱
-        if (mySide === 'b') {
-            topName.innerText = data.w_name === null ? "正在等待玩家..." : data.w_name;
-            bottomName.innerText = data.b_name === null ? "正在等待玩家..." : data.b_name;
-        } else {
-            topName.innerText = data.b_name === null ? "正在等待玩家..." : data.b_name;
-            bottomName.innerText = data.w_name === null ? "正在等待玩家..." : data.w_name;
-        }
+        displayPlayersName(data.w_name, data.b_name);
 
         // 重新繪製
         selected = null;

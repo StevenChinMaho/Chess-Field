@@ -21,8 +21,8 @@ if ($info) {
     // 遊戲設定配置
     $game_settings = [
         'side' => $_POST['side'] ?? '',
-        'time_minutes' => $_POST['timeMinutes'] ?? '',
-        'increment' => $_POST['increment'] ?? '',
+        'time_minutes' => (float)($_POST['timeMinutes'] ?? '0'),
+        'increment' => (float)($_POST['increment'] ?? '0'),
         'assist' => $_POST['assist'] ?? ''
     ];
     
@@ -34,15 +34,23 @@ if ($info) {
     $game_status = $stmt->fetch();
     
     // 如果是deciding狀態且是玩家一就切換成waiting
+    // 遊戲資料庫初始設定區域
     if ($game_status['status'] === 'deciding' && $info['player_id'] === $info['p1_id']) {
         if ($game_settings['side'] != 'w' && $game_settings['side'] != 'b')
             $game_settings['side'] = mt_rand(0, 1) ? 'w' : 'b';
         
         $stmt = $pdo->prepare("UPDATE `games` 
                                SET `status` = 'waiting',
-                               `p1_side` = :side
+                                   `p1_side` = :side,
+                                   `p1_time` = :p1_time,
+                                   `p2_time` = :p2_time,
+                                   `time_increment` = :increment
                                WHERE game_id = :game_id");
-        $stmt->execute(['side' => $game_settings['side'], 'game_id' => $game_status['game_id']]);
+        $stmt->execute(['side' => $game_settings['side'], 
+                        'game_id' => $game_status['game_id'],
+                        'p1_time' => $game_settings['time_minutes'] * 60,
+                        'p2_time' => $game_settings['time_minutes'] * 60,
+                        'increment' => $game_settings['increment']]);
     }
     
     // 如果是waiting狀態且是玩家二就切換成playing
@@ -112,11 +120,17 @@ $current_move_count = $stmt_m->fetchColumn();
     <div class="game-layout">
         <div class="board-area">
             <div class="player-bar top">
-                <span class="name" id="top-name">Opponent</span>
+                <div class="player-bar-wrapper">
+                    <span class="name" id="top-name">Opponent</span>
+                    <span id="top-time">10:00</span>
+                </div>
             </div>
             <div id="board" class="board"></div>
             <div class="player-bar btm">
-                <span class="name" id="bottom-name">You</span>
+                <div class="player-bar-wrapper">
+                    <span class="name" id="bottom-name">You</span>
+                    <span id="top-time">10:00</span>
+                </div>
             </div>
         </div>
 

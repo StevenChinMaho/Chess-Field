@@ -18,7 +18,7 @@ body {
 
 .game-layout {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 20px;
     width: 100%;
     max-width: 900px;
@@ -31,13 +31,32 @@ body {
     max-width: 600px;
     display: flex;
     flex-direction: column;
+    border-radius: 22px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
 .player-bar {
-    padding: 10px 0;
+    padding: 10px 10px;
     font-size: 1.2rem;
     font-weight: bold;
     color: #3a3a3a;
+    background-color: #ecc992;
+}
+
+.player-bar-wrapper {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-radius: 50vh;
+    background-color: #F0D9B5;
+}
+
+.top {
+    border-radius: 22px 22px 0 0;
+}
+
+.btm {
+    border-radius: 0 0 22px 22px;
 }
 
 .board {
@@ -108,10 +127,10 @@ body {
 
 .side-bar {
     width: 300px;
-    background: var(--panel);
     display: flex;
     flex-direction: column;
-    height: 500px;
+    border-radius: 22px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
 .moves {
@@ -120,6 +139,7 @@ body {
     padding: 10px;
     font-family: monospace;
     background: #2b2926;
+    border-radius: 22px 22px 0 0;
 }
 
 .moves div {
@@ -131,12 +151,14 @@ body {
     padding: 15px;
     background: black;
     text-align: center;
+    border-radius: 0 0 22px 22px;
 }
 
 .status {
-    color: #3a3a3a;
+    color: #dddddd;
     margin-bottom: 10px;
     font-size: 1.1rem;
+    font-weight: bold;
 }
 
 .btn {
@@ -147,6 +169,7 @@ body {
     background: gray;
     color: white;
     font-weight: bold;
+    border-radius: 12px;
 }
 
 .btn:hover {
@@ -221,4 +244,15 @@ body {
 
 #btn-action:active {
     transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+    .game-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .side-bar {
+        height: 80vh;
+    }
 }
