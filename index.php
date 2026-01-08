@@ -30,6 +30,7 @@ if (!$row) {
     <script src="js/index.js?v=<?php echo $asset_versions["index.js"]; ?>" defer></script>
 </head>
 <body>
+    <input hidden id="error-msg" value="<?php echo htmlspecialchars($error_message); ?>">
     <div class="homepage">
         <h1>Chess Field</h1>
 

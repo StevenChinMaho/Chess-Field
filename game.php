@@ -69,7 +69,7 @@ if ($info) {
     else if ($info['p2_id'] == $info['player_id']) $my_side = $p1_side === 'w' ? 'b' : 'w';
 } else {
     // 輸入不合法，導回主畫面 (可能是房間已過期或玩家不存在)
-    header("Location: index.php?error=invaild_input");
+    header("Location: index.php?error=invalid_input");
     exit();
 }
 
