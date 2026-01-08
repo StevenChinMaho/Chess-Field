@@ -144,24 +144,23 @@ function pieceDetail(pieceType) {
     };
 }
 
-function getMoves(r, c, p) { 
+function getRawMoves(r, c, p, board = chessboardArr) { 
     const detail = pieceDetail(p);
     const color = detail.color;
     const type = detail.type;
 
     let m = [];  // 儲存棋子可以走的位置
 
-    const inBoard = (r,c) => r>=0 && r<8 && c>=0 && c<8;  // 棋子有沒有在棋盤的範圍裡
+    const inBoard = (nr,nc) => nr>=0 && nr<8 && nc>=0 && nc<8;  // 棋子有沒有在棋盤的範圍裡
 
     const add = (tr,tc) => {
         if(!inBoard(tr,tc)) 
             return false;
-        const target = chessboardArr[tr][tc];
+        const target = board[tr][tc];
         if(!target) { 
             m.push({r:tr, c:tc}); return true; 
         }
-        const targetDetail = pieceDetail(target);
-        if(targetDetail.color !== color)  // 判斷target顏色
+        if(pieceDetail(target).color !== color)  // 判斷target顏色
             m.push({r:tr, c:tc});
         return false;
     };
@@ -170,14 +169,14 @@ function getMoves(r, c, p) {
         const d = (color==='w') ? -1 : 1;  // 白兵往上走-1，黑兵往下走+1
         const start = (color==='w') ? 6 : 1;  // 兵的起始位置
 
-        if(inBoard(r+d,c) && !chessboardArr[r+d][c]) {  // 往前走一格
+        if(inBoard(r+d,c) && !board[r+d][c]) {  // 往前走一格
             m.push({r:r+d, c:c});
-            if(r===start && !chessboardArr[r+d*2][c])  // 往前走兩格
+            if(r===start && !board[r+d*2][c])  // 往前走兩格
                 m.push({r:r+d*2, c:c});
         }
         [[r+d,c-1], [r+d,c+1]].forEach(([tr,tc]) => {  // 斜吃: 有棋子且要是對手的棋子
             if(inBoard(tr,tc)) { 
-                const t = chessboardArr[tr][tc]; 
+                const t = board[tr][tc]; 
                 if(t) {
                     const tDetail = pieceDetail(t);
                     if(tDetail.color !== color) 
@@ -197,15 +196,15 @@ function getMoves(r, c, p) {
 
         if(!hasMoved[`${r},${c}`]) {  // 國王沒動過
             // 短易位
-            if(!chessboardArr[r][c+1] && !chessboardArr[r][c+2]) {  // 國王右側兩格是不是空的
-                if (chessboardArr[r][c+3] && !hasMoved[`${r},${c+3}`]) {  // 右邊的城堡有沒有動過
+            if(!board[r][c+1] && !board[r][c+2]) {  // 國王右側兩格是不是空的
+                if (board[r][c+3] && !hasMoved[`${r},${c+3}`]) {  // 右邊的城堡有沒有動過
                      m.push({r:r, c:c+2, isCastling: 'short'});  // 把短易位加入棋子可以走的位置
                 }
             }
 
             // 長易位
-            if (!chessboardArr[r][c-1] && !chessboardArr[r][c-2] && !chessboardArr[r][c-3]) {  // 國王左側三格是不是空的
-                if (chessboardArr[r][c-4] && !hasMoved[`${r},${c-4}`]) {  // 左邊的城堡有沒有動過
+            if (!board[r][c-1] && !board[r][c-2] && !board[r][c-3]) {  // 國王左側三格是不是空的
+                if (board[r][c-4] && !hasMoved[`${r},${c-4}`]) {  // 左邊的城堡有沒有動過
                     m.push({r:r, c:c-2, isCastling: 'long'});  // 把長易位加入棋子可以走的位置
                 }
             }
@@ -226,6 +225,78 @@ function getMoves(r, c, p) {
     }
 
     return m;
+}
+
+function isCheck(color, board) {
+    let kingPos = null;
+    const kingChar = (color === 'w' ? 'K' : 'k');
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c] === kingChar) {
+                kingPos = { r, c };
+                break;
+            }
+        }
+    }
+    if (!kingPos)
+        return false;
+
+    const opponentColor = (color === 'w' ? 'b' : 'w');
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = board[r][c];
+            if (p && pieceDetail(p).color === opponentColor) {
+                const moves = getRawMoves(r, c, p, board);
+                if (moves.find(m => m.r === kingPos.r && m.c === kingPos.c))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
+function getLegalMoves(r, c, p) {
+    const rawMoves = getRawMoves(r, c, p);
+    const color = pieceDetail(p).color;
+
+    return rawMoves.filter(move => {
+        const tempBoard = chessboardArr.map(row => [...row]);
+        tempBoard[move.r][move.c] = tempBoard[r][c];
+        tempBoard[r][c] = null;
+        if (move.isEnPassant)
+            tempBoard[r][move.c] = null;
+
+        return !isCheck(color, tempBoard);
+    });
+}
+
+async function checkGameState(color) {
+    let hasLegalMove = false;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = chessboardArr[r][c];
+            if (p && pieceDetail(p).color === color) {
+                if (getLegalMoves(r, c, p).length > 0) {
+                    hasLegalMove = true;
+                    break;
+                }
+            }
+        }
+        if (hasLegalMove)
+            break;
+    }
+
+    if (!hasLegalMove) {
+        const isKingInCheck = isCheck(color, chessboardArr);
+        const outcome = isKingInCheck ? (color === 'w' ? 'b' : 'w') : 'draw';
+
+        const fd = new FormData();
+        fd.append('room_code', roomCode);
+        fd.append('outcome', outcome);
+        await fetch('api/end-game.php', { method: 'POST', body: fd });
+        
+        showGameOverModal(outcome);
+    }
 }
 
 function render() {
@@ -303,7 +374,7 @@ function click(r, c) {
         if (turn !== mySide) return; 
 
         selected = {r,c};
-        hints = getMoves(r, c, p);  // 計算棋子能走到哪
+        hints = getLegalMoves(r, c, p);  // 計算棋子能走到哪
         render();
         return; 
     }
@@ -397,6 +468,7 @@ function click(r, c) {
 
             // 3. 本地切換回合 (等待伺服器確認)
             turn = (turn==='w') ? 'b' : 'w';  // 交換回合
+            checkGameState(turn);
             moveCount++;
             updateActionButton();
             selected = null;

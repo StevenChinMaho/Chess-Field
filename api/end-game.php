@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 
 $room_code = $_POST['room_code'] ?? '';
 $identity = $_COOKIE['identity'] ?? '';
+$outcome = $_POST['outcome'] ?? null;
 
 $sql = "SELECT r.game_id, r.p1_id, r.p2_id, p.player_id, g.p1_side
         FROM rooms r
@@ -14,21 +15,26 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute(['idn' => $identity, 'code' => $room_code]);
 $info = $stmt->fetch();
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM moves WHERE game_id = ?");
-$stmt->execute([$info['game_id']]);
-$move_count = $stmt->fetchColumn();
+if (!$info) {
+    echo json_encode(['status' => 'error']);
+    exit;
+}
 
-$action_type = ($move_count < 2) ? 'aborted' : 'resign';
-$outcome = '';
-if ($action_type === 'aborted') {
-    $outcome = 'aborted';  // 終止，不分勝負
-} else {
-    $my_color = ($info['player_id'] == $info['p1_id']) ? $info['p1_side'] : ($info['p1_side'] == 'w' ? 'b' : 'w');
-    $outcome = ($my_color == 'w') ? 'b' : 'w'; // 投降: 白方按黑方贏，黑方按白方贏
+if (!$outcome) {
+    $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM moves WHERE game_id = ?");
+    $stmt_count->execute([$info['game_id']]);
+    $move_count = $stmt_count->fetchColumn();
+
+    if ($move_count < 2) {
+        $outcome = 'aborted';
+    } else {
+        $my_color = ($info['player_id'] == $info['p1_id']) ? $info['p1_side'] : ($info['p1_side'] == 'w' ? 'b' : 'w');
+        $outcome = ($my_color == 'w') ? 'b' : 'w';
+    }
 }
 
 $stmt = $pdo->prepare("UPDATE games SET status = 'finished', outcome = :outcome WHERE game_id = :gid");
 $stmt->execute(['outcome' => $outcome, 'gid' => $info['game_id']]);
 
-echo json_encode(['status' => 'success', 'type' => $action_type]);
+echo json_encode(['status' => 'success']);
 ?>
