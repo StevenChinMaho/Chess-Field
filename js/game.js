@@ -1,14 +1,23 @@
 const boardElement = document.getElementById('board');  // 負責棋盤棋子
 const stateElement = document.getElementById('status');  // 負責現在輪到誰
 const logsElement = document.getElementById('logs');  // 負責棋譜紀錄
+const topName = document.getElementById('top-name'); // 上方玩家名稱 (對手)
+const bottomName = document.getElementById('bottom-name'); // 下方玩家名稱 (我方)
 
 // 讀取 PHP 傳來的設定
 const roomCode = GAME_CONFIG.roomCode;
 const mySide = GAME_CONFIG.mySide;
 
+// 與結束遊戲相關的變數
+let moveCount = GAME_CONFIG.initialMoveCount;
+let isFinished = (GAME_CONFIG.gameStatus === 'finished');
+// let isPlaying = GAME_CONFIG.gameStatus === 'playing';
+const actionBtn = document.getElementById('btn-action');
+const modal = document.getElementById('game-modal');
+const modalMsg = document.getElementById('modal-msg');
+
 // 初始化棋盤
 let chessboardArr = stringToBoard(GAME_CONFIG.initialBoard);
-
 let isPlaying = false;
 let turn = GAME_CONFIG.initialTurn;  // 輪到誰
 let selected = null;  // 被選取的棋子
@@ -56,6 +65,46 @@ function applyCastlingRights(castling) {
 }
 
 applyCastlingRights(GAME_CONFIG.initialCastling);
+
+function updateActionButton() {
+    if (mySide === 'spectator' || isFinished) {
+        actionBtn.style.display = 'none';
+        return;
+    }
+    actionBtn.style.display = 'block';
+    if (moveCount < 2) {
+        actionBtn.innerText = "終止遊戲";
+        actionBtn.style.backgroundColor = "#d9534f";
+    } else {
+        actionBtn.innerText = "投降";
+        actionBtn.style.backgroundColor = "#f0ad4e";
+    }
+}
+
+function showGameOverModal(outcome) {
+    isPlaying = false;
+    let msg = "";
+    if (outcome === 'aborted') {
+        msg = "遊戲已被終止";
+    } else if (outcome === 'w') {
+        msg = "遊戲結束，白方獲勝！";
+    } else if (outcome === 'b') {
+        msg = "遊戲結束，黑方獲勝！";
+    } else {
+        msg = "對局結束";
+    }
+    modalMsg.innerText = msg;
+    modal.classList.add('show');
+    updateActionButton();
+}
+
+actionBtn.onclick = async () => {
+    const text = (moveCount < 2) ? "終止" : "投降";
+    if (!confirm(`確定要${text}遊戲嗎？`)) return;
+    const fd = new FormData();
+    fd.append('room_code', roomCode);
+    await fetch('api/end-game.php', { method: 'POST', body: fd });
+};
 
 
 const symbols = {
@@ -351,6 +400,8 @@ function click(r, c) {
 
             // 3. 本地切換回合 (等待伺服器確認)
             turn = (turn==='w') ? 'b' : 'w';  // 交換回合
+            moveCount++;
+            updateActionButton();
             selected = null;
             hints = [];
             render();
@@ -397,6 +448,13 @@ function initSSE() {
         chessboardArr = stringToBoard(data.board);
         turn = data.turn;
         isPlaying = data.status === "playing";
+        isFinished = (data.status === "finished");
+
+        if (isFinished) {
+            showGameOverModal(data.outcome);
+        }
+        
+        if (data.move_count !== undefined) moveCount = data.move_count;
 
         // 同步 en-passant 目標（若有）
         if (data.en_passant) {
@@ -412,6 +470,15 @@ function initSSE() {
             applyCastlingRights(data.castling);
         }
         
+        // 更新玩家名稱
+        if (mySide === 'b') {
+            topName.innerText = data.w_name === null ? "正在等待玩家..." : data.w_name;
+            bottomName.innerText = data.b_name === null ? "正在等待玩家..." : data.b_name;
+        } else {
+            topName.innerText = data.b_name === null ? "正在等待玩家..." : data.b_name;
+            bottomName.innerText = data.w_name === null ? "正在等待玩家..." : data.w_name;
+        }
+
         // 重新繪製
         selected = null;
         hints = [];
@@ -423,7 +490,12 @@ function initSSE() {
     };
 }
 
-document.getElementById('btn-reset').onclick = () => location.reload();  // Restart按鈕
 // 啟動
 initSSE();
+updateActionButton();
+if (isFinished) {
+    showGameOverModal(GAME_CONFIG.outcome);
+} else {
+    modal.classList.remove('show');
+}
 render();  // game.php執行後，先把棋盤棋子畫出來

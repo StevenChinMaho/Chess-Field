@@ -34,7 +34,16 @@ while (true) {
 
     // 檢查是否有更新
     // 我們檢查 last_update 的 timestamp
-    $stmt = $pdo->prepare("SELECT chessboard, turn, status, en_passant_target, castling_rights, UNIX_TIMESTAMP(last_update) as ts FROM games WHERE game_id = ?");
+    $stmt = $pdo->prepare("SELECT chessboard, 
+                                  turn, 
+                                  p1_side,
+                                  status, 
+                                  outcome, 
+                                  en_passant_target, 
+                                  castling_rights, 
+                                  UNIX_TIMESTAMP(last_update) as ts 
+                           FROM games 
+                           WHERE game_id = ?");
     $stmt->execute([$game_id]);
     $game = $stmt->fetch();
 
@@ -44,11 +53,31 @@ while (true) {
         // 如果資料庫的時間比我們上次知道的時間新，就發送數據
         if ($db_ts > $last_timestamp) {
             $last_timestamp = $db_ts;
+
+            // 查詢移動次數 (開局中止或投降用)
+            $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM moves WHERE game_id = ?");
+            $stmt_count->execute([$game_id]);
+            $move_count = $stmt_count->fetchColumn();
+            
+            // 查詢黑白兩方玩家名稱
+            $stmt_name = $pdo->prepare("SELECT p1.player_name AS p1_name, 
+                                               p2.player_name AS p2_name
+                                        FROM rooms r
+                                        LEFT JOIN players p1 ON r.p1_id = p1.player_id
+                                        LEFT JOIN players p2 ON r.p2_id = p2.player_id
+                                        WHERE r.room_code = ?
+            "); 
+            $stmt_name->execute([$room_code]);
+            $players_name = $stmt_name->fetch();
             
             $payload = [
+                'w_name' => $game['p1_side'] === 'w' ? $players_name['p1_name'] : $players_name['p2_name'],
+                'b_name' => $game['p1_side'] === 'b' ? $players_name['p1_name'] : $players_name['p2_name'],
                 'board' => $game['chessboard'], // 64字元字串
                 'turn' => $game['turn'] ?? 'w', // w 或 b
                 'status' => $game['status'],
+                'outcome' => $game['outcome'],
+                'move_count' => (int)$move_count,
                 'en_passant' => $game['en_passant_target'],
                 'castling' => $game['castling_rights']
             ];
