@@ -191,7 +191,7 @@ if (!$room) {
             </div>
         </div>
 
-        <div class="setting-group">
+        <div class="setting-group" hidden>
             <label class="setting-label">輔助功能 (合法移動提示)</label>
             <div class="btn-group" id="assist-group">
                 <button class="btn selected" data-value="true">開啟</button>
