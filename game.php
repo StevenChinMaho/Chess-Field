@@ -151,6 +151,19 @@ $current_move_count = $stmt_m->fetchColumn();
         </div>
     </div>
 
+    <div id="promotion-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="color: #3a3a3a;">兵升變</h2>
+            <p style="color: #3a3a3a;">請選擇你要升變的棋子：</p>
+            <div class="promotion-choices" style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                <button data-piece="Q" class="promo-btn">♛</button>
+                <button data-piece="R" class="promo-btn">♜</button>
+                <button data-piece="B" class="promo-btn">♝</button>
+                <button data-piece="N" class="promo-btn">♞</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/game.js?v=<?php echo $asset_versions['game.js']; ?>" defer></script>
 </body>
 </html>

@@ -269,3 +269,22 @@ body {
         height: 80vh;
     }
 }
+
+.promo-btn {
+    font-size: 50px;
+    width: 70px;
+    height: 70px;
+    cursor: pointer;
+    background: #eeeed2; /* 棋盤淺色 */
+    border: 3px solid #769656; /* 棋盤深色 */
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.promo-btn:hover {
+    background: #d5d5b0;
+    transform: scale(1.1);
+}

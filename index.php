@@ -6,6 +6,9 @@ $player_name = "";
 $last_room_code = "";
 $identity = $_COOKIE['identity'] ?? null;
 
+// 接收錯誤返回訊息
+$error_message = $_GET['error'] ?? '';
+
 $stmt = $pdo->prepare("SELECT * FROM `players` WHERE `player_identity` = :identity");
 $stmt->execute(['identity' => $identity]);
 $row = $stmt->fetch();

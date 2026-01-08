@@ -293,6 +293,25 @@ function getGameOutcome(color) {
     return null;
 }
 
+function askForPromotion(color) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('promotion-modal');
+        const buttons = modal.querySelectorAll('.promo-btn');
+        const pieces = ['Q', 'R', 'B', 'N'];
+
+        buttons.forEach((btn, idx) => {
+            const type = pieces[idx];
+            btn.innerText = symbols[color === 'w' ? type : type.toLowerCase()];
+            
+            btn.onclick = () => {
+                modal.classList.remove('show');
+                resolve(type);
+            };
+        });
+        modal.classList.add('show');
+    });
+} 
+
 function render() {
     boardElement.innerHTML = '';  // 清空棋盤
     
@@ -351,7 +370,7 @@ function render() {
     stateElement.innerText = statusText;
 }
 
-function click(r, c) {
+async function click(r, c) {
     // 觀戰者或非自己回合不能操作
     if (mySide === 'spectator') return;
     // 非playing狀態不可操作
@@ -382,6 +401,9 @@ function click(r, c) {
             const pieceOriginal = chessboardArr[selected.r][selected.c];  // 拿起原本位置的棋子
             const detailOriginal = pieceDetail(pieceOriginal);
 
+            chessboardArr[r][c] = pieceOriginal;  // 放到新的位置
+            chessboardArr[selected.r][selected.c] = null;  // 清空舊的位置
+
             let moveString = "";
             const isCapture = chessboardArr[r][c] !== null || canMove.isEnPassant;
             if (canMove.isCastling) {
@@ -402,12 +424,11 @@ function click(r, c) {
                 }
 
                 if (detailOriginal.type === 'p' && (r === 0 || r === 7)) {
-                    moveString += "=Q";
+                    const choice = await askForPromotion(turn); // 在這裡暫停等待玩家選擇
+                    chessboardArr[r][c] = (turn === 'w') ? choice : choice.toLowerCase();
+                    moveString += "=" + choice; // 更新記譜，ex: e8=N
                 }
             }
-
-            chessboardArr[r][c] = pieceOriginal;  // 放到新的位置
-            chessboardArr[selected.r][selected.c] = null;  // 清空舊的位置
 
             hasMoved[`${fromR},${fromC}`] = true;  // 表示棋子已經移動過
             hasMoved[`${r},${c}`] = true;  // 新的位置也算移動過
@@ -439,10 +460,6 @@ function click(r, c) {
             } else {
                 // 如果不是走兩格，或者不是兵，重置過路兵的點 (過路兵機會只有一回合)
                 enPassantTarget = null;
-            }
-
-            if(detailOriginal.type === 'p' && (r===0 || r===7)) {  // 兵的升變(目前只有后)
-                chessboardArr[r][c] = (turn === 'w') ? 'Q' : 'q'; 
             }
             
             // 棋譜紀錄
