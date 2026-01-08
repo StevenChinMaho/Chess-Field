@@ -136,8 +136,8 @@ if (!$room) {
         else {
             // 狀態是 playing 或 finished -> 房間已開打或結束
             // 根據需求，這裡可以選擇踢回首頁，或是允許觀戰(若是觀戰則直接導向 game.php)
-            // 這裡先設為踢回
-            header("Location: index.php?error=game_started");
+            // header("Location: index.php?error=game_started");
+            header("Location: game.php?" . http_build_query(['room_code' => $room_code]));
             exit;
         }
     }
