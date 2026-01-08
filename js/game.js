@@ -270,7 +270,7 @@ function getLegalMoves(r, c, p) {
     });
 }
 
-async function checkGameState(color) {
+function getGameOutcome(color) {
     let hasLegalMove = false;
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
@@ -288,15 +288,9 @@ async function checkGameState(color) {
 
     if (!hasLegalMove) {
         const isKingInCheck = isCheck(color, chessboardArr);
-        const outcome = isKingInCheck ? (color === 'w' ? 'b' : 'w') : 'draw';
-
-        const fd = new FormData();
-        fd.append('room_code', roomCode);
-        fd.append('outcome', outcome);
-        await fetch('api/end-game.php', { method: 'POST', body: fd });
-        
-        showGameOverModal(outcome);
+        return isKingInCheck ? (color === 'w' ? 'b' : 'w') : 'draw';    
     }
+    return null;
 }
 
 function render() {
@@ -462,14 +456,19 @@ function click(r, c) {
 
             // 1. 產生棋盤字串
             const newBoardStr = boardToString(chessboardArr);
+            const nextTurn = (turn === 'w') ? 'b' : 'w';
+            const outcome = getGameOutcome(nextTurn);
             
             // 2. 發送給後端
-            sendMoveToServer(newBoardStr, moveString); // 記得把你原本算好的 moveString 傳進去
+            sendMoveToServer(newBoardStr, moveString, outcome); // 記得把你原本算好的 moveString 傳進去
 
             // 3. 本地切換回合 (等待伺服器確認)
-            turn = (turn==='w') ? 'b' : 'w';  // 交換回合
-            checkGameState(turn);
+            turn = nextTurn;  // 交換回合
             moveCount++;
+            if (outcome) {
+                isFinished = true;
+                showGameOverModal(outcome);
+            }
             updateActionButton();
             selected = null;
             hints = [];
@@ -564,11 +563,14 @@ function updateClock(w_time, b_time) {
 
 
 // === AJAX 發送移動 ===
-async function sendMoveToServer(boardStr, moveText) {
+async function sendMoveToServer(boardStr, moveText, outcome = null) {
     const formData = new FormData();
     formData.append('room_code', roomCode);
     formData.append('board', boardStr);
     formData.append('move_text', moveText);
+    if (outcome) {
+        formData.append('outcome', outcome);
+    }
 
     try {
         const res = await fetch('api/make-move.php', {

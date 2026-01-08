@@ -7,6 +7,7 @@ $identity = $_COOKIE['identity'] ?? null;
 $room_code = $_POST['room_code'] ?? null;
 $board_str = $_POST['board'] ?? null; // 64字元字串
 $move_text = $_POST['move_text'] ?? ''; // e.g. "e2e4"
+$outcome = $_POST['outcome'] ?? null;
 
 if (!$identity || !$room_code || !$board_str) {
     echo json_encode(['status' => 'error', 'message' => '缺少參數']);
@@ -124,11 +125,13 @@ try {
     }
 
     // 取得本次移動所花費時間
-    $stmt = $pdo->prepare("SELECT TIMESTAMPDIFF(SECOND, last_update, NOW())
+    $stmt = $pdo->prepare("SELECT TIMESTAMPDIFF(SECOND, last_update, NOW()) diff_seconds, 
+                                  time_increment
                            FROM games 
                            WHERE game_id = ?");
     $stmt->execute([$data['game_id']]);
-    $diff_seconds = $stmt->fetchColumn();
+    $time_data = $stmt->fetch();
+    $diff_seconds = $time_data['diff_seconds'];
 
     // 扣除時間
     if ($current_turn === $data['p1_side']) {
@@ -136,23 +139,26 @@ try {
         $stmt = $pdo->prepare("UPDATE games 
                                SET p1_time = p1_time - :diff
                                WHERE game_id = :gid");
-        $stmt->execute(['diff' => $diff_seconds, 'gid' => $data['game_id']]);
+        $stmt->execute(['diff' => $diff_seconds - $time_data['time_increment'], 'gid' => $data['game_id']]);
     } else {
         // 不是則反之，扣p2_time
         $stmt = $pdo->prepare("UPDATE games 
                                SET p2_time = p2_time - :diff
                                WHERE game_id = :gid");
-        $stmt->execute(['diff' => $diff_seconds, 'gid' => $data['game_id']]);
+        $stmt->execute(['diff' => $diff_seconds - $time_data['time_increment'], 'gid' => $data['game_id']]);
     }
 
     // 下一回合顏色
     $next_turn = ($current_turn === 'w') ? 'b' : 'w';
 
+    $new_status = $outcome ? 'finished' : 'playing';
+
     // 更新 Games 表 (棋盤狀態、回合、最後更新時間、en_passant_target, castling_rights)
     $stmt = $pdo->prepare("UPDATE games 
                            SET chessboard = :board, 
                                turn = :next, 
-                               status = 'playing', 
+                               status = :status, 
+                               outcome = :outcome,
                                last_update = NOW(), 
                                en_passant_target = :enpass, 
                                castling_rights = :castling 
@@ -160,6 +166,8 @@ try {
     $stmt->execute([
         'board' => $board_str,
         'next' => $next_turn,
+        'status' => $new_status,
+        'outcome' => $outcome,
         'enpass' => $en_passant,
         'castling' => $new_castling,
         'gid' => $data['game_id']
