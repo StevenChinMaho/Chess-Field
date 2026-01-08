@@ -1,6 +1,8 @@
 const boardElement = document.getElementById('board');  // 負責棋盤棋子
 const stateElement = document.getElementById('status');  // 負責現在輪到誰
 const logsElement = document.getElementById('logs');  // 負責棋譜紀錄
+const topName = document.getElementById('top-name'); // 上方玩家名稱 (對手)
+const bottomName = document.getElementById('bottom-name'); // 下方玩家名稱 (我方)
 
 // 讀取 PHP 傳來的設定
 const roomCode = GAME_CONFIG.roomCode;
@@ -468,6 +470,15 @@ function initSSE() {
             applyCastlingRights(data.castling);
         }
         
+        // 更新玩家名稱
+        if (mySide === 'b') {
+            topName.innerText = data.w_name === null ? "正在等待玩家..." : data.w_name;
+            bottomName.innerText = data.b_name === null ? "正在等待玩家..." : data.b_name;
+        } else {
+            topName.innerText = data.b_name === null ? "正在等待玩家..." : data.b_name;
+            bottomName.innerText = data.w_name === null ? "正在等待玩家..." : data.w_name;
+        }
+
         // 重新繪製
         selected = null;
         hints = [];

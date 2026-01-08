@@ -12,7 +12,7 @@ $sql = "SELECT r.p1_id, r.p2_id, p.player_id
         JOIN players p ON p.player_identity = :idn 
         WHERE r.room_code = :code AND TIMESTAMPDIFF(SECOND, r.last_conn, NOW()) <= :exp";
 $stmt = $pdo->prepare($sql);
-$stmt->execute(['idn' => $identity, 'code' => $room_code, 'exp' => EXPIRATION_TIME_SECONDS]);
+$stmt->execute(['idn' => $identity, 'code' => $room_code, 'exp' => EXPIRATION_TIME_SECONDS]); //檢查過期時間，避免過期房間被意外進入
 $info = $stmt->fetch();
 
 $my_side = 'spectator';
@@ -60,13 +60,16 @@ if ($info) {
     if ($info['p1_id'] == $info['player_id']) $my_side = $p1_side;
     else if ($info['p2_id'] == $info['player_id']) $my_side = $p1_side === 'w' ? 'b' : 'w';
 } else {
-    // 輸入不合法，導回主畫面
+    // 輸入不合法，導回主畫面 (可能是房間已過期或玩家不存在)
     header("Location: index.php?error=invaild_input");
     exit();
 }
 
 // 3. 取得初始棋盤 (如果剛進來是 reload，需要恢復盤面)
-$sql_game = "SELECT g.game_id, g.chessboard, g.turn, g.status, g.outcome, g.en_passant_target, g.castling_rights FROM rooms r JOIN games g ON r.game_id = g.game_id WHERE r.room_code = ?";
+$sql_game = "SELECT g.game_id, g.chessboard, g.turn, g.status, g.outcome, g.en_passant_target, g.castling_rights 
+             FROM rooms r 
+             JOIN games g ON r.game_id = g.game_id 
+             WHERE r.room_code = ?";
 $stmt_g = $pdo->prepare($sql_game);
 $stmt_g->execute([$room_code]);
 $game_data = $stmt_g->fetch();
@@ -109,11 +112,11 @@ $current_move_count = $stmt_m->fetchColumn();
     <div class="game-layout">
         <div class="board-area">
             <div class="player-bar top">
-                <span class="name">Opponent</span>
+                <span class="name" id="top-name">Opponent</span>
             </div>
             <div id="board" class="board"></div>
             <div class="player-bar btm">
-                <span class="name">You</span>
+                <span class="name" id="bottom-name">You</span>
             </div>
         </div>
 
