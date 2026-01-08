@@ -129,7 +129,7 @@ $current_move_count = $stmt_m->fetchColumn();
             <div class="player-bar btm">
                 <div class="player-bar-wrapper">
                     <span class="name" id="bottom-name">You</span>
-                    <span id="top-time">10:00</span>
+                    <span id="bottom-time">10:00</span>
                 </div>
             </div>
         </div>

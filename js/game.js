@@ -1,8 +1,6 @@
 const boardElement = document.getElementById('board');  // 負責棋盤棋子
 const stateElement = document.getElementById('status');  // 負責現在輪到誰
 const logsElement = document.getElementById('logs');  // 負責棋譜紀錄
-const topName = document.getElementById('top-name'); // 上方玩家名稱 (對手)
-const bottomName = document.getElementById('bottom-name'); // 下方玩家名稱 (我方)
 
 // 讀取 PHP 傳來的設定
 const roomCode = GAME_CONFIG.roomCode;
@@ -413,6 +411,8 @@ function click(r, c) {
     }
 }
 
+const topName = document.getElementById('top-name'); // 上方玩家名稱 (對手)
+const bottomName = document.getElementById('bottom-name'); // 下方玩家名稱 (我方)
 let dotsInterval; // 動畫計時器
 
 function displayPlayersName(w_name, b_name) {
@@ -443,6 +443,51 @@ function displayPlayersName(w_name, b_name) {
         setName(topName, b_name);
         setName(bottomName, w_name);
     }
+}
+
+let timerInterval; // 棋鐘計時器
+
+const topTime = document.getElementById('top-time');
+const bottomTime = document.getElementById('bottom-time');
+
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+}
+
+function updateClock(w_time, b_time) {
+    // 清掉舊的計時器，避免重複
+    if (timerInterval) clearTimeout(timerInterval);
+
+    function tick() {
+        // 顯示目前時間
+        if (mySide === 'b') {
+            topTime.innerText = formatTime(w_time);
+            bottomTime.innerText = formatTime(b_time);
+        } else {
+            topTime.innerText = formatTime(b_time);
+            bottomTime.innerText = formatTime(w_time);
+        }
+        
+
+        if (isPlaying) {
+            if (turn === 'w' && w_time > 0) {
+                w_time--;
+            } else if (turn === 'b' && b_time > 0) {
+                b_time--;
+            }
+        }
+
+        // 繼續倒數直到時間歸零
+        if (w_time > 0 || b_time > 0) {
+            timerInterval = setTimeout(tick, 1000);
+        } else {
+            console.log("時間到！");
+        }
+    }
+
+    tick(); // 啟動第一次
 }
 
 
@@ -504,6 +549,9 @@ function initSSE() {
         
         // 更新玩家名稱
         displayPlayersName(data.w_name, data.b_name);
+
+        // 更新棋鐘
+        updateClock(data.w_time, data.b_time);
 
         // 重新繪製
         selected = null;

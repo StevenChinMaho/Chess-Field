@@ -59,20 +59,25 @@ while (true) {
             $stmt_count->execute([$game_id]);
             $move_count = $stmt_count->fetchColumn();
             
-            // 查詢黑白兩方玩家名稱
+            // 查詢黑白兩方玩家名稱與剩餘時間
             $stmt_name = $pdo->prepare("SELECT p1.player_name AS p1_name, 
-                                               p2.player_name AS p2_name
+                                               p2.player_name AS p2_name,
+                                               g.p1_time,
+                                               g.p2_time
                                         FROM rooms r
                                         LEFT JOIN players p1 ON r.p1_id = p1.player_id
                                         LEFT JOIN players p2 ON r.p2_id = p2.player_id
+                                        JOIN games g ON g.game_id = ?
                                         WHERE r.room_code = ?
             "); 
-            $stmt_name->execute([$room_code]);
-            $players_name = $stmt_name->fetch();
+            $stmt_name->execute([$game_id, $room_code]);
+            $players_info = $stmt_name->fetch();
             
             $payload = [
-                'w_name' => $game['p1_side'] === 'w' ? $players_name['p1_name'] : $players_name['p2_name'],
-                'b_name' => $game['p1_side'] === 'b' ? $players_name['p1_name'] : $players_name['p2_name'],
+                'w_name' => $game['p1_side'] === 'w' ? $players_info['p1_name'] : $players_info['p2_name'],
+                'b_name' => $game['p1_side'] === 'b' ? $players_info['p1_name'] : $players_info['p2_name'],
+                'w_time' => $game['p1_side'] === 'w' ? $players_info['p1_time'] : $players_info['p2_time'],
+                'b_time' => $game['p1_side'] === 'b' ? $players_info['p1_time'] : $players_info['p2_time'],
                 'board' => $game['chessboard'], // 64字元字串
                 'turn' => $game['turn'] ?? 'w', // w 或 b
                 'status' => $game['status'],
