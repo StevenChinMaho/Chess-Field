@@ -367,6 +367,7 @@ function render() {
     // 狀態顯示優化
     let statusText = (turn === 'w' ? "白方回合" : "黑方回合");
     if (turn === mySide && isPlaying) statusText += " (輪到你了)";
+    if (mySide === 'spectator') statusText += " (觀戰中)"
     stateElement.innerText = statusText;
 }
 
