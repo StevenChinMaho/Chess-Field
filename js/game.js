@@ -463,15 +463,6 @@ async function click(r, c) {
                 enPassantTarget = null;
             }
             
-            // 棋譜紀錄
-            const logEntry = document.createElement('div');
-            // 加上顏色提示
-            logEntry.style.color = (turn === 'w') ? '#fff' : '#aaa';
-            logEntry.innerText = moveString; // 例如 "Nf3" 或 "exd5"
-            
-            logsElement.appendChild(logEntry);
-            logsElement.scrollTop = logsElement.scrollHeight;
-
             // 1. 產生棋盤字串
             const newBoardStr = boardToString(chessboardArr);
             const nextTurn = (turn === 'w') ? 'b' : 'w';
@@ -688,6 +679,20 @@ function initSSE() {
 
         // 更新棋鐘
         updateClock(data.w_time, data.b_time);
+
+        // 繪製棋譜
+        let count = 0;
+        logsElement.innerHTML = '';
+        for (let key in data.move_texts) {
+            const logEntry = document.createElement('div');
+            // 加上顏色提示
+            logEntry.style.color = (count % 2 === 0 ) ? '#fff' : '#aaa';
+            logEntry.innerText = data.move_texts[key]; // 例如 "Nf3" 或 "exd5"
+            
+            logsElement.appendChild(logEntry);
+            logsElement.scrollTop = logsElement.scrollHeight;
+            count++;
+        }
 
         // 重新繪製
         selected = null;

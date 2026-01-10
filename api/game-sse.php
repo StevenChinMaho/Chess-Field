@@ -73,6 +73,11 @@ while (true) {
             $stmt_name->execute([$game_id, $room_code]);
             $players_info = $stmt_name->fetch();
             
+            // 查詢所有棋譜
+            $stmt_moves = $pdo->prepare("SELECT move_text FROM moves WHERE game_id = ?");
+            $stmt_moves->execute([$game_id]);
+            $move_texts = $stmt_moves->fetchAll(PDO::FETCH_COLUMN);
+
             $payload = [
                 'w_name' => $game['p1_side'] === 'w' ? $players_info['p1_name'] : $players_info['p2_name'],
                 'b_name' => $game['p1_side'] === 'b' ? $players_info['p1_name'] : $players_info['p2_name'],
@@ -83,6 +88,7 @@ while (true) {
                 'status' => $game['status'],
                 'outcome' => $game['outcome'],
                 'move_count' => (int)$move_count,
+                'move_texts' => $move_texts,
                 'en_passant' => $game['en_passant_target'],
                 'castling' => $game['castling_rights']
             ];
